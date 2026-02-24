@@ -1,36 +1,124 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🎬 MovieMatch - Bir Sonraki Favori Filmini Keşfet
 
-## Getting Started
+Tinder tarzı film keşif uygulaması. Next.js, React, Tailwind CSS ve TMDB API ile geliştirildi.
 
-First, run the development server:
+## ✨ Özellikler
 
+- **Swipe Arayüzü**: Yumuşak kart tabanlı UI ile sürükle-kaydır
+- **TMDB API**: Gerçek film verileri, posterler, puanlar ve açıklamalar
+- **Akıllı Öneriler**: Beğendiğiniz türlere göre öğrenir ve önerir
+- **Dil Seçimi**: Türkçe, İngilizce veya tüm diller
+- **Dark Tema**: Premium glassmorphism tasarım
+- **LocalStorage**: Beğenileriniz tarayıcıda saklanır
+- **Mobil Uyumlu**: Tüm cihazlarda mükemmel çalışır
+
+## 🚀 Kurulum
+
+### Gereksinimler
+
+- Node.js 18+
+- TMDB API Key (ücretsiz)
+
+### TMDB API Key Alma
+
+1. [TMDB'ye kaydolun](https://www.themoviedb.org/signup)
+2. Hesap ayarlarından API bölümüne gidin
+3. API Key (v3 auth) alın
+4. `lib/api.ts` dosyasındaki `TMDB_API_KEY` değişkenine yapıştırın
+
+### Kurulum Adımları
+
+1. Bağımlılıkları yükleyin:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. API key'inizi ekleyin:
+`lib/api.ts` dosyasını açın ve şu satırı bulun:
+```typescript
+const TMDB_API_KEY = "YOUR_TMDB_API_KEY";
+```
+`YOUR_TMDB_API_KEY` yerine kendi API key'inizi yazın.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+3. Geliştirme sunucusunu başlatın:
+```bash
+npm run dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+4. Tarayıcıda açın: [http://localhost:3000](http://localhost:3000)
 
-## Learn More
+## 🎮 Nasıl Kullanılır
 
-To learn more about Next.js, take a look at the following resources:
+- **Sağa Kaydır** veya ❤️ butonu = Filmi beğen
+- **Sola Kaydır** veya ✖️ butonu = Geç
+- **Yukarı Kaydır** veya ℹ️ butonu = Detayları gör
+- Uygulama beğenilerinizi öğrenir ve benzer türde filmler önerir
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 🛠️ Teknolojiler
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- **Next.js 16** - React framework
+- **TypeScript** - Tip güvenli geliştirme
+- **Tailwind CSS v4.2** - Modern CSS framework
+- **Framer Motion** - Animasyonlar
+- **Lucide React** - İkonlar
+- **TMDB API** - Film veritabanı
 
-## Deploy on Vercel
+## 📁 Proje Yapısı
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```
+moviematch/
+├── app/
+│   ├── globals.css       # Global stiller
+│   ├── layout.tsx        # Root layout
+│   └── page.tsx          # Ana sayfa
+├── components/
+│   ├── MovieCard.tsx     # Kaydırılabilir film kartı
+│   └── MovieDetailsModal.tsx  # Film detay modal
+├── lib/
+│   ├── api.ts            # TMDB API entegrasyonu
+│   └── storage.ts        # LocalStorage yönetimi
+└── README.md
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 🔗 GitHub'a Bağlama
+
+### Yeni repo oluştur:
+
+```bash
+cd moviematch
+git remote add origin https://github.com/KULLANICI_ADINIZ/moviematch.git
+git branch -M main
+git push -u origin main
+```
+
+### GitHub CLI ile:
+
+```bash
+cd moviematch
+gh repo create moviematch --public --source=. --remote=origin --push
+```
+
+## 📝 Komutlar
+
+- `npm run dev` - Geliştirme sunucusu
+- `npm run build` - Production build
+- `npm start` - Production sunucu
+- `npm run lint` - ESLint
+
+## 🎨 Özelleştirme
+
+- `app/globals.css` - Renk şemasını değiştir
+- `lib/api.ts` - Film türlerini ve sorgularını düzenle
+- `components/MovieCard.tsx` - Kart tasarımını değiştir
+
+## 📄 Lisans
+
+MIT License
+
+## 🤝 Katkıda Bulunma
+
+Pull request'ler memnuniyetle karşılanır!
+
+---
+
+TMDB API ile geliştirildi ❤️
