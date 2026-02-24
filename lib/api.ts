@@ -10,11 +10,12 @@ export interface Movie {
   voteCount?: number;
   genres?: string[];
   language?: string;
+  runtime?: number;
 }
 
 export type Language = "all" | "tr" | "en";
 
-const TMDB_API_KEY = "YOUR_TMDB_API_KEY"; // Kullanıcı kendi API key'ini ekleyecek
+const TMDB_API_KEY = "d21c5a8c93900cbfd0b6dd3ae43f8f9e"; // Kullanıcı kendi API key'ini ekleyecek
 const TMDB_BASE_URL = "https://api.themoviedb.org/3";
 const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p";
 
@@ -137,7 +138,38 @@ function processMovies(items: any[]): Movie[] {
       voteCount: item.vote_count,
       genres: item.genre_ids?.map((id: number) => GENRE_MAP[id]).filter(Boolean),
       language: item.original_language,
+      runtime: item.runtime,
     }));
+}
+
+export async function fetchMovieDetails(movieId: number): Promise<Movie | null> {
+  try {
+    const response = await fetch(
+      `${TMDB_BASE_URL}/movie/${movieId}?api_key=${TMDB_API_KEY}&language=tr`
+    );
+    
+    if (!response.ok) return null;
+    
+    const data = await response.json();
+    
+    return {
+      id: data.id,
+      title: data.title,
+      originalTitle: data.original_title,
+      overview: data.overview,
+      posterPath: data.poster_path,
+      backdropPath: data.backdrop_path,
+      releaseDate: data.release_date,
+      voteAverage: data.vote_average,
+      voteCount: data.vote_count,
+      genres: data.genres?.map((g: any) => g.name),
+      language: data.original_language,
+      runtime: data.runtime,
+    };
+  } catch (error) {
+    console.error("Error fetching movie details:", error);
+    return null;
+  }
 }
 
 export { GENRE_MAP };

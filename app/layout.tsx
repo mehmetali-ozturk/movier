@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "MovieMatch - Bir Sonraki Favori Filmini Keşfet",
+  title: "Movier - Bir Sonraki Favori Filmini Keşfet",
   description: "Filmleri kaydırarak keşfet ve favorilerini bul",
 };
 

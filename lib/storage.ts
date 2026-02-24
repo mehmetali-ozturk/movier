@@ -1,31 +1,39 @@
 import { Movie } from "./api";
 
-const LIKED_MOVIES_KEY = "moviematch_liked_movies";
-const LANGUAGE_KEY = "moviematch_language";
+const WATCHLIST_KEY = "movier_watchlist";
+const LANGUAGE_KEY = "movier_language";
 
-export function getLikedMovies(): Movie[] {
+export function getWatchlist(): Movie[] {
   if (typeof window === "undefined") return [];
   
-  const stored = localStorage.getItem(LIKED_MOVIES_KEY);
+  const stored = localStorage.getItem(WATCHLIST_KEY);
   return stored ? JSON.parse(stored) : [];
 }
 
-export function saveLikedMovie(movie: Movie): void {
+export function addToWatchlist(movie: Movie): void {
   if (typeof window === "undefined") return;
   
-  const liked = getLikedMovies();
-  const exists = liked.some(m => m.id === movie.id);
+  const watchlist = getWatchlist();
+  const exists = watchlist.some(m => m.id === movie.id);
   
   if (!exists) {
-    liked.push(movie);
-    localStorage.setItem(LIKED_MOVIES_KEY, JSON.stringify(liked));
+    watchlist.unshift(movie); // En başa ekle
+    localStorage.setItem(WATCHLIST_KEY, JSON.stringify(watchlist));
   }
 }
 
-export function clearLikedMovies(): void {
+export function removeFromWatchlist(movieId: number): void {
   if (typeof window === "undefined") return;
   
-  localStorage.removeItem(LIKED_MOVIES_KEY);
+  const watchlist = getWatchlist();
+  const filtered = watchlist.filter(m => m.id !== movieId);
+  localStorage.setItem(WATCHLIST_KEY, JSON.stringify(filtered));
+}
+
+export function clearWatchlist(): void {
+  if (typeof window === "undefined") return;
+  
+  localStorage.removeItem(WATCHLIST_KEY);
 }
 
 export function getLanguagePreference(): "all" | "tr" | "en" {
@@ -42,10 +50,10 @@ export function setLanguagePreference(language: "all" | "tr" | "en"): void {
 }
 
 export function getLikedGenres(): number[] {
-  const liked = getLikedMovies();
+  const watchlist = getWatchlist();
   const allGenres: string[] = [];
   
-  liked.forEach(movie => {
+  watchlist.forEach(movie => {
     if (movie.genres) {
       allGenres.push(...movie.genres);
     }

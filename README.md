@@ -1,4 +1,4 @@
-# 🎬 MovieMatch - Bir Sonraki Favori Filmini Keşfet
+# 🎬 Movier - Bir Sonraki Favori Filmini Keşfet
 
 Tinder tarzı film keşif uygulaması. Next.js, React, Tailwind CSS ve TMDB API ile geliştirildi.
 
