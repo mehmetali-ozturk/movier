@@ -1,15 +1,16 @@
 "use client";
 
 import { motion, useMotionValue, useTransform } from "framer-motion";
-import { Movie, getImageUrl } from "@/lib/api";
+import { Movie, getImageUrl, Language} from "@/lib/api";
 import { Star, Calendar, Heart, X, Film } from "lucide-react";
 
 interface MovieCardProps {
   movie: Movie;
   onSwipe: (direction: "left" | "right" | "up") => void;
+  language : Language
 }
 
-export default function MovieCard({ movie, onSwipe }: MovieCardProps) {
+export default function MovieCard({ movie, onSwipe, language }: MovieCardProps) {
   const x = useMotionValue(0);
   const y = useMotionValue(0);
   
@@ -121,7 +122,7 @@ export default function MovieCard({ movie, onSwipe }: MovieCardProps) {
               )}
               {movie.voteCount && (
                 <span className="text-gray-300 text-sm">
-                  {movie.voteCount.toLocaleString()} oy
+                  {movie.voteCount.toLocaleString()} {language === "en" ? "votes" : "oy"}
                 </span>
               )}
             </div>

@@ -186,6 +186,7 @@ export default function Home() {
             <MovieCard
               movie={currentMovie}
               onSwipe={handleSwipe}
+              language={language}
             />
           ) : (
             <div className="text-center">
