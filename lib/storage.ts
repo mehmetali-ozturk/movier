@@ -60,19 +60,19 @@ export function getLikedGenres(): number[] {
   });
   
   // Tür isimlerini ID'lere çevir
-  const genreMap: Record<string, number> = {
-    "Aksiyon": 28,
-    "Macera": 12,
-    "Animasyon": 16,
-    "Komedi": 35,
-    "Suç": 80,
-    "Drama": 18,
-    "Fantastik": 14,
-    "Korku": 27,
-    "Romantik": 10749,
-    "Bilim Kurgu": 878,
-    "Gerilim": 53
-  };
+    const genreMap: Record<string, number> = {
+        "Aksiyon": 28, "Action": 28,
+        "Macera": 12, "Adventure": 12,
+        "Animasyon": 16, "Animation": 16,
+        "Komedi": 35, "Comedy": 35,
+        "Suç": 80, "Crime": 80,
+        "Drama": 18,
+        "Fantastik": 14, "Fantasy": 14,
+        "Korku": 27, "Horror": 27,
+        "Romantik": 10749, "Romance": 10749,
+        "Bilim Kurgu": 878, "Science Fiction": 878,
+        "Gerilim": 53, "Thriller": 53
+    };
   
   const genreCount = allGenres.reduce((acc, genre) => {
     acc[genre] = (acc[genre] || 0) + 1;

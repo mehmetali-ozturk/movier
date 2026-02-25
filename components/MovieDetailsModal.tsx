@@ -2,22 +2,22 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Star, Calendar, Clock, Film } from "lucide-react";
-import { Movie, getImageUrl, fetchMovieDetails } from "@/lib/api";
 import { useEffect, useState } from "react";
-
+import { Movie, getImageUrl, fetchMovieDetails, Language } from "@/lib/api";
 interface MovieDetailsModalProps {
   movie: Movie | null;
   onClose: () => void;
+  Language : Language;
 }
 
-export default function MovieDetailsModal({ movie, onClose }: MovieDetailsModalProps) {
+export default function MovieDetailsModal({ movie, onClose, Language}: MovieDetailsModalProps) {
   const [detailedMovie, setDetailedMovie] = useState<Movie | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (movie) {
       setLoading(true);
-      fetchMovieDetails(movie.id).then((details) => {
+        fetchMovieDetails(movie.id, Language).then((details) => {
         if (details) {
           setDetailedMovie(details);
         } else {
@@ -143,6 +143,7 @@ export default function MovieDetailsModal({ movie, onClose }: MovieDetailsModalP
             {displayMovie.overview && (
               <div className="bg-white/5 rounded-xl p-6 border border-white/10">
                 <h4 className="text-xl font-semibold text-white mb-3">Özet</h4>
+                  {Language === "en" ? "Overview" : "Özet"}
                 <p className="text-gray-300 leading-relaxed">
                   {displayMovie.overview}
                 </p>
@@ -151,7 +152,7 @@ export default function MovieDetailsModal({ movie, onClose }: MovieDetailsModalP
 
             {loading && (
               <div className="text-center text-gray-400 text-sm mt-4">
-                Detaylar yükleniyor...
+                  {Language === "en" ? "Loading details..." : "Detaylar yükleniyor..."}
               </div>
             )}
           </div>

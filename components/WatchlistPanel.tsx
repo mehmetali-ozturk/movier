@@ -2,7 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Star, Calendar, Trash2, ExternalLink, Film } from "lucide-react";
-import { Movie, getImageUrl } from "@/lib/api";
+import { Movie, getImageUrl,Language } from "@/lib/api";
 import { removeFromWatchlist, clearWatchlist } from "@/lib/storage";
 import { useState } from "react";
 
@@ -11,9 +11,10 @@ interface WatchlistPanelProps {
   onClose: () => void;
   watchlist: Movie[];
   onUpdate: () => void;
+  language: Language;
 }
 
-export default function WatchlistPanel({ isOpen, onClose, watchlist, onUpdate }: WatchlistPanelProps) {
+export default function WatchlistPanel({ isOpen, onClose, watchlist, onUpdate, language }: WatchlistPanelProps) {
   const [showClearConfirm, setShowClearConfirm] = useState(false);
 
   const handleRemove = (movieId: number) => {
@@ -52,8 +53,8 @@ export default function WatchlistPanel({ isOpen, onClose, watchlist, onUpdate }:
             <div className="sticky top-0 bg-black/95 backdrop-blur-lg border-b border-red-600/30 p-4">
               <div className="flex items-center justify-between mb-3">
                 <div>
-                  <h2 className="text-2xl font-bold text-white">İzleme Listem</h2>
-                  <p className="text-gray-400 text-sm">{watchlist.length} film</p>
+                  <h2 className="text-2xl font-bold text-white">{language==="en" ? "Watchlist":"İzleme Listem"}</h2>
+                  <p className="text-gray-400 text-sm">{watchlist.length} {language === "en" ? "movies" : "film"}</p>
                 </div>
                 <button
                   onClick={onClose}
@@ -70,7 +71,7 @@ export default function WatchlistPanel({ isOpen, onClose, watchlist, onUpdate }:
                   className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg transition border border-red-600/30"
                 >
                   <Trash2 size={18} />
-                  Tüm Listeyi Temizle
+                    {language === "en"? "Clear All?": "Tüm Listeyi Temizle"}
                 </button>
               )}
             </div>
@@ -79,20 +80,21 @@ export default function WatchlistPanel({ isOpen, onClose, watchlist, onUpdate }:
             {showClearConfirm && (
               <div className="mx-4 mt-4 p-4 bg-red-600/10 border border-red-600/30 rounded-xl">
                 <p className="text-white text-center mb-3">
-                  Tüm izleme listesini ve algoritma tercihlerini temizlemek istediğinize emin misiniz?
+                    {language === "en" ? "Are you sure you want to clear your entire watchlist and algorithm preferences?" :
+                        "Tüm izleme listesini ve algoritma tercihlerini temizlemek istediğinize emin misiniz?"}
                 </p>
                 <div className="flex gap-3">
                   <button
                     onClick={handleClearAll}
                     className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-medium"
                   >
-                    Evet, Temizle
+                      {language === "en" ? "Yes, Clear" : "Evet, Temizle"}
                   </button>
                   <button
                     onClick={() => setShowClearConfirm(false)}
                     className="flex-1 px-4 py-2 bg-white/10 text-white rounded-lg hover:bg-white/20 transition"
                   >
-                    İptal
+                      {language === "en" ? "Cancel" : "İptal"}
                   </button>
                 </div>
               </div>
@@ -103,9 +105,10 @@ export default function WatchlistPanel({ isOpen, onClose, watchlist, onUpdate }:
               {watchlist.length === 0 ? (
                 <div className="text-center py-12">
                   <Film className="mx-auto text-gray-600 mb-4" size={64} strokeWidth={1.5} />
-                  <p className="text-gray-400 text-lg mb-2">İzleme listeniz boş</p>
+                  <p className="text-gray-400 text-lg mb-2">{language === "en" ? "Your watchlist is empty" : "İzleme listeniz boş"}</p>
                   <p className="text-gray-500 text-sm">
-                    Beğendiğiniz filmleri sağa kaydırarak ekleyin
+                      {language === "en" ? "Swipe right on movies you like to add them" :
+                          "Beğendiğiniz filmleri sağa kaydırarak ekleyin"}
                   </p>
                 </div>
               ) : (
@@ -171,7 +174,7 @@ export default function WatchlistPanel({ isOpen, onClose, watchlist, onUpdate }:
                               className="flex items-center gap-1 px-3 py-1.5 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg text-sm transition"
                             >
                               <Trash2 size={14} />
-                              Kaldır
+                                {language === "en" ? "Remove" : "Kaldır"}
                             </button>
                             <a
                               href={`https://www.themoviedb.org/movie/${movie.id}`}

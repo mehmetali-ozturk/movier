@@ -9,6 +9,7 @@ import { Movie, fetchMovies, Language } from "@/lib/api";
 import { getWatchlist, addToWatchlist, getLikedGenres, clearWatchlist, getLanguagePreference, setLanguagePreference } from "@/lib/storage";
 
 export default function Home() {
+  const [hasMounted, setHasMounted] = useState(false);
   const [movies, setMovies] = useState<Movie[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -19,12 +20,13 @@ export default function Home() {
   const [showWatchlistPanel, setShowWatchlistPanel] = useState(false);
   const [apiKeyMissing, setApiKeyMissing] = useState(false);
 
-  useEffect(() => {
-    const savedLanguage = getLanguagePreference();
-    setLanguage(savedLanguage);
-    loadMovies(savedLanguage);
-    updateWatchlist();
-  }, []);
+    useEffect(() => {
+        setHasMounted(true); //
+        const savedLanguage = getLanguagePreference();
+        setLanguage(savedLanguage);
+        loadMovies(savedLanguage);
+        updateWatchlist();
+    }, []);
 
   const updateWatchlist = () => {
     setWatchlist(getWatchlist());
@@ -72,11 +74,12 @@ export default function Home() {
     loadMovies(newLang);
   };
 
-  const languageLabels = {
-    all: "Tüm Diller",
-    tr: "Türkçe",
-    en: "İngilizce"
-  };
+// ui için dil değişiklikleri
+    const languageLabels = {
+        all: language === "en" ? "All Languages" : "Tüm Diller",
+        tr: language === "en" ? "Turkish" : "Türkçe",
+        en: language === "en" ? "English" : "İngilizce"
+    };
 
   const currentMovie = movies[currentIndex];
 
@@ -130,10 +133,10 @@ export default function Home() {
               <button
                 onClick={() => setShowWatchlistPanel(true)}
                 className="relative p-2 rounded-lg bg-red-600/20 hover:bg-red-600/30 border border-red-600/50 transition"
-                title="İzleme Listem"
+                title={language === "en" ? "My Watchlist" : "İzleme Listem"}
               >
                 <List className="text-red-500" size={20} />
-                {watchlist.length > 0 && (
+                {hasMounted && watchlist.length > 0 && (
                   <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-600 text-white text-xs rounded-full flex items-center justify-center font-bold">
                     {watchlist.length}
                   </span>
@@ -143,7 +146,7 @@ export default function Home() {
                 <button
                   onClick={() => setShowLanguageMenu(!showLanguageMenu)}
                   className="p-2 rounded-lg bg-red-600/20 hover:bg-red-600/30 border border-red-600/50 transition"
-                  title="Dil Seçimi"
+                  title={language === "en" ? "Language Selection" : "Dil Seçimi"}
                 >
                   <Languages className="text-red-500" size={20} />
                 </button>
@@ -165,10 +168,12 @@ export default function Home() {
               </div>
             </div>
           </div>
-          <p className="text-gray-400 text-sm mb-2">Filmleri kaydırarak keşfet</p>
+            <p className="text-gray-400 text-sm mb-2">
+                {language === "en" ? "Swipe to discover movies" : "Filmleri kaydırarak keşfet"}
+            </p>
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-red-600/10 border border-red-600/30 rounded-full">
             <Heart className="text-red-500" size={16} fill="currentColor" />
-            <span className="text-white font-medium">{watchlist.length}</span>
+            <span className="text-white font-medium">{hasMounted ? watchlist.length : 0}</span>
             <span className="text-gray-400 text-sm">• {languageLabels[language]}</span>
           </div>
         </div>
@@ -225,6 +230,7 @@ export default function Home() {
       <MovieDetailsModal
         movie={selectedMovie}
         onClose={() => setSelectedMovie(null)}
+        Language={language}
       />
 
       <WatchlistPanel
@@ -232,6 +238,7 @@ export default function Home() {
         onClose={() => setShowWatchlistPanel(false)}
         watchlist={watchlist}
         onUpdate={updateWatchlist}
+        language={language}
       />
     </main>
   );

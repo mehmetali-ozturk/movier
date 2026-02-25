@@ -15,7 +15,7 @@ export interface Movie {
 
 export type Language = "all" | "tr" | "en";
 
-const TMDB_API_KEY = "d21c5a8c93900cbfd0b6dd3ae43f8f9e"; // Kullanıcı kendi API key'ini ekleyecek
+const TMDB_API_KEY = "a541270bca92f769670f0479054f3a07"; // Kullanıcı kendi API key'ini ekleyecek
 const TMDB_BASE_URL = "https://api.themoviedb.org/3";
 const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p";
 
@@ -27,27 +27,16 @@ const POPULAR_GENRES: Record<Language, number[]> = {
 };
 
 // Genre ID'leri
-const GENRE_MAP: Record<number, string> = {
-  28: "Aksiyon",
-  12: "Macera",
-  16: "Animasyon",
-  35: "Komedi",
-  80: "Suç",
-  99: "Belgesel",
-  18: "Drama",
-  10751: "Aile",
-  14: "Fantastik",
-  36: "Tarih",
-  27: "Korku",
-  10402: "Müzik",
-  9648: "Gizem",
-  10749: "Romantik",
-  878: "Bilim Kurgu",
-  10770: "TV Film",
-  53: "Gerilim",
-  10752: "Savaş",
-  37: "Western"
+const GENRES = {
+    tr: {
+        28: "Aksiyon", 12: "Macera", 16: "Animasyon", 35: "Komedi", 80: "Suç", 99: "Belgesel", 18: "Drama", 10751: "Aile", 14: "Fantastik", 36: "Tarih", 27: "Korku", 10402: "Müzik", 9648: "Gizem", 10749: "Romantik", 878: "Bilim Kurgu", 10770: "TV Film", 53: "Gerilim", 10752: "Savaş", 37: "Western"
+    },
+    en: {
+        28: "Action", 12: "Adventure", 16: "Animation", 35: "Comedy", 80: "Crime", 99: "Documentary", 18: "Drama", 10751: "Family", 14: "Fantasy", 36: "History", 27: "Horror", 10402: "Music", 9648: "Mystery", 10749: "Romance", 878: "Science Fiction", 10770: "TV Movie", 53: "Thriller", 10752: "War", 37: "Western"
+    }
 };
+
+export const GENRE_MAP = GENRES.tr; // Uyumluluk için
 
 export function getImageUrl(path: string, size: string = "w500"): string {
   return `${TMDB_IMAGE_BASE}/${size}${path}`;
@@ -73,7 +62,7 @@ export async function fetchMovies(
     
     if (popularResponse.ok) {
       const data = await popularResponse.json();
-      allMovies.push(...processMovies(data.results));
+      allMovies.push(...processMovies(data.results,language));
       console.log(`Popular movies: ${data.results.length}`);
     }
     
@@ -84,7 +73,7 @@ export async function fetchMovies(
     
     if (topRatedResponse.ok) {
       const data = await topRatedResponse.json();
-      allMovies.push(...processMovies(data.results));
+      allMovies.push(...processMovies(data.results,language));
       console.log(`Top rated movies: ${data.results.length}`);
     }
     
@@ -97,7 +86,7 @@ export async function fetchMovies(
       
       if (genreResponse.ok) {
         const data = await genreResponse.json();
-        allMovies.push(...processMovies(data.results));
+        allMovies.push(...processMovies(data.results,language));
         console.log(`Genre ${GENRE_MAP[genreId]} movies: ${data.results.length}`);
       }
     }
@@ -120,13 +109,14 @@ export async function fetchMovies(
   }
 }
 
-function processMovies(items: any[]): Movie[] {
-  return items
-    .filter((item: any) => {
-      // Poster ve açıklama olmalı
-      return item.poster_path && item.overview && item.vote_count > 10;
-    })
-    .map((item: any) => ({
+function processMovies(items: any[], language: Language): Movie[] {
+    const langKey = language === "tr" ? "tr" : "en"; // Varsayılan dilleri değiştirdim
+
+    return items
+        .filter((item: any) => {
+            return item.poster_path && item.overview && item.vote_count > 10;
+        })
+        .map((item: any) => ({
       id: item.id,
       title: item.title,
       originalTitle: item.original_title,
@@ -136,17 +126,19 @@ function processMovies(items: any[]): Movie[] {
       releaseDate: item.release_date,
       voteAverage: item.vote_average,
       voteCount: item.vote_count,
-      genres: item.genre_ids?.map((id: number) => GENRE_MAP[id]).filter(Boolean),
+      genres: item.genre_ids?.map((id: number) => GENRES[langKey][id as keyof typeof GENRES['tr']]).filter(Boolean),
       language: item.original_language,
       runtime: item.runtime,
     }));
 }
 
-export async function fetchMovieDetails(movieId: number): Promise<Movie | null> {
-  try {
-    const response = await fetch(
-      `${TMDB_BASE_URL}/movie/${movieId}?api_key=${TMDB_API_KEY}&language=tr`
-    );
+export async function fetchMovieDetails(movieId: number, language: Language = "en"): Promise<Movie | null> {
+    const langParam = language === "tr" ? "tr" : "en";
+    try {
+        const response = await fetch(
+            // language=tr vardı onun yerine dinamik şekilde halletsin diye parametre olarak aldım
+            `${TMDB_BASE_URL}/movie/${movieId}?api_key=${TMDB_API_KEY}&language=${langParam}`
+        );
     
     if (!response.ok) return null;
     
