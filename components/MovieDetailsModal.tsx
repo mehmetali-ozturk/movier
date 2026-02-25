@@ -1,23 +1,24 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Star, Calendar, Clock, Film } from "lucide-react";
+import { X, Star, Calendar, Clock } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Movie, getImageUrl, fetchMovieDetails, Language } from "@/lib/api";
+
 interface MovieDetailsModalProps {
   movie: Movie | null;
   onClose: () => void;
-  Language : Language;
+  language: Language;
 }
 
-export default function MovieDetailsModal({ movie, onClose, Language}: MovieDetailsModalProps) {
+export default function MovieDetailsModal({ movie, onClose, language }: MovieDetailsModalProps) {
   const [detailedMovie, setDetailedMovie] = useState<Movie | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (movie) {
       setLoading(true);
-        fetchMovieDetails(movie.id, Language).then((details) => {
+      fetchMovieDetails(movie.id, language).then((details) => {
         if (details) {
           setDetailedMovie(details);
         } else {
@@ -26,7 +27,7 @@ export default function MovieDetailsModal({ movie, onClose, Language}: MovieDeta
         setLoading(false);
       });
     }
-  }, [movie]);
+  }, [movie, language]);
 
   if (!movie) return null;
 
@@ -56,7 +57,7 @@ export default function MovieDetailsModal({ movie, onClose, Language}: MovieDeta
                 alt={displayMovie.title}
                 className="w-full h-full object-cover"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/70 to-transparent" />
+              <div className="absolute inset-0 bg-linear-to-t from-black via-black/70 to-transparent" />
               
               {/* Close Button */}
               <button
@@ -142,8 +143,9 @@ export default function MovieDetailsModal({ movie, onClose, Language}: MovieDeta
 
             {displayMovie.overview && (
               <div className="bg-white/5 rounded-xl p-6 border border-white/10">
-                <h4 className="text-xl font-semibold text-white mb-3">Özet</h4>
-                  {Language === "en" ? "Overview" : "Özet"}
+                <h4 className="text-xl font-semibold text-white mb-3">
+                  {language === "en" ? "Overview" : "Özet"}
+                </h4>
                 <p className="text-gray-300 leading-relaxed">
                   {displayMovie.overview}
                 </p>
@@ -152,7 +154,7 @@ export default function MovieDetailsModal({ movie, onClose, Language}: MovieDeta
 
             {loading && (
               <div className="text-center text-gray-400 text-sm mt-4">
-                  {Language === "en" ? "Loading details..." : "Detaylar yükleniyor..."}
+                {language === "en" ? "Loading details..." : "Detaylar yükleniyor..."}
               </div>
             )}
           </div>

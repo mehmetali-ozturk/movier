@@ -1,4 +1,4 @@
-import { Movie } from "./api";
+import { Movie, Language } from "./api";
 
 const WATCHLIST_KEY = "movier_watchlist";
 const LANGUAGE_KEY = "movier_language";
@@ -36,14 +36,14 @@ export function clearWatchlist(): void {
   localStorage.removeItem(WATCHLIST_KEY);
 }
 
-export function getLanguagePreference(): "all" | "tr" | "en" {
-  if (typeof window === "undefined") return "all";
+export function getLanguagePreference(): Language {
+  if (typeof window === "undefined") return "en";
   
   const stored = localStorage.getItem(LANGUAGE_KEY);
-  return (stored as "all" | "tr" | "en") || "all";
+  return (stored as Language) || "en";
 }
 
-export function setLanguagePreference(language: "all" | "tr" | "en"): void {
+export function setLanguagePreference(language: Language): void {
   if (typeof window === "undefined") return;
   
   localStorage.setItem(LANGUAGE_KEY, language);

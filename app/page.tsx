@@ -6,27 +6,27 @@ import MovieDetailsModal from "@/components/MovieDetailsModal";
 import WatchlistPanel from "@/components/WatchlistPanel";
 import { Heart, X, RotateCcw, Info, Languages, List, Film } from "lucide-react";
 import { Movie, fetchMovies, Language } from "@/lib/api";
-import { getWatchlist, addToWatchlist, getLikedGenres, clearWatchlist, getLanguagePreference, setLanguagePreference } from "@/lib/storage";
+import { getWatchlist, addToWatchlist, getLikedGenres, getLanguagePreference, setLanguagePreference } from "@/lib/storage";
 
 export default function Home() {
-  const [hasMounted, setHasMounted] = useState(false);
   const [movies, setMovies] = useState<Movie[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [watchlist, setWatchlist] = useState<Movie[]>([]);
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
-  const [language, setLanguage] = useState<Language>("all");
+  const [language, setLanguage] = useState<Language>("en");
   const [showLanguageMenu, setShowLanguageMenu] = useState(false);
   const [showWatchlistPanel, setShowWatchlistPanel] = useState(false);
   const [apiKeyMissing, setApiKeyMissing] = useState(false);
+  const [hasMounted, setHasMounted] = useState(false);
 
-    useEffect(() => {
-        setHasMounted(true); //
-        const savedLanguage = getLanguagePreference();
-        setLanguage(savedLanguage);
-        loadMovies(savedLanguage);
-        updateWatchlist();
-    }, []);
+  useEffect(() => {
+    setHasMounted(true);
+    const savedLanguage = getLanguagePreference();
+    setLanguage(savedLanguage);
+    loadMovies(savedLanguage);
+    updateWatchlist();
+  }, []);
 
   const updateWatchlist = () => {
     setWatchlist(getWatchlist());
@@ -74,12 +74,16 @@ export default function Home() {
     loadMovies(newLang);
   };
 
-// ui için dil değişiklikleri
-    const languageLabels = {
-        all: language === "en" ? "All Languages" : "Tüm Diller",
-        tr: language === "en" ? "Turkish" : "Türkçe",
-        en: language === "en" ? "English" : "İngilizce"
-    };
+  const languageLabels: Record<Language, string> = {
+    tr: "🇹🇷 Türkçe",
+    en: "🇬🇧 English",
+    es: "🇪🇸 Español",
+    fr: "🇫🇷 Français",
+    de: "🇩🇪 Deutsch",
+    it: "🇮🇹 Italiano",
+    ja: "🇯🇵 日本語",
+    ko: "🇰🇷 한국어"
+  };
 
   const currentMovie = movies[currentIndex];
 
@@ -231,7 +235,7 @@ export default function Home() {
       <MovieDetailsModal
         movie={selectedMovie}
         onClose={() => setSelectedMovie(null)}
-        Language={language}
+        language={language}
       />
 
       <WatchlistPanel
