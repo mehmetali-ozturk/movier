@@ -2,9 +2,9 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Star, Calendar, Trash2, ExternalLink, Film } from "lucide-react";
-import { Movie, getImageUrl,Language } from "@/lib/api";
+import { Movie, getImageUrl, Language, fetchMovieDetails } from "@/lib/api";
 import { removeFromWatchlist, clearWatchlist } from "@/lib/storage";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface WatchlistPanelProps {
   isOpen: boolean;
@@ -16,6 +16,26 @@ interface WatchlistPanelProps {
 
 export default function WatchlistPanel({ isOpen, onClose, watchlist, onUpdate, language }: WatchlistPanelProps) {
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [localizedMovies, setLocalizedMovies] = useState<Movie[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  // Dil değiştiğinde watchlist'teki filmleri yeni dilde çek
+  useEffect(() => {
+    if (isOpen && watchlist.length > 0) {
+      setLoading(true);
+      Promise.all(
+        watchlist.map(movie => fetchMovieDetails(movie.id, language))
+      ).then(results => {
+        const validMovies = results.filter((m): m is Movie => m !== null);
+        setLocalizedMovies(validMovies);
+        setLoading(false);
+      });
+    } else {
+      setLocalizedMovies([]);
+    }
+  }, [isOpen, watchlist, language]);
+
+  const displayMovies = localizedMovies.length > 0 ? localizedMovies : watchlist;
 
   const handleRemove = (movieId: number) => {
     removeFromWatchlist(movieId);
@@ -111,9 +131,13 @@ export default function WatchlistPanel({ isOpen, onClose, watchlist, onUpdate, l
                           "Beğendiğiniz filmleri sağa kaydırarak ekleyin"}
                   </p>
                 </div>
+              ) : loading ? (
+                <div className="text-center py-12">
+                  <p className="text-gray-400">{language === "en" ? "Loading..." : "Yükleniyor..."}</p>
+                </div>
               ) : (
                 <div className="space-y-4">
-                  {watchlist.map((movie) => (
+                  {displayMovies.map((movie) => (
                     <motion.div
                       key={movie.id}
                       initial={{ opacity: 0, y: 20 }}
