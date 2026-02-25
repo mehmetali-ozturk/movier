@@ -15,7 +15,7 @@ export interface Movie {
 
 export type Language = "tr" | "en" | "es" | "fr" | "de" | "it" | "ja" | "ko";
 
-const TMDB_API_KEY = "YOUR_TMDB_API_KEY";
+const TMDB_API_KEY = "a541270bca92f769670f0479054f3a07";
 const TMDB_BASE_URL = "https://api.themoviedb.org/3";
 const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p";
 
