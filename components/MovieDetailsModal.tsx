@@ -3,7 +3,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Star, Calendar, Clock } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Movie, getImageUrl, fetchMovieDetails, Language } from "@/lib/api";
+import { Movie, getImageUrl, fetchMovieDetails, fetchMovieTrailer, Language } from "@/lib/api";
 
 interface MovieDetailsModalProps {
   movie: Movie | null;
@@ -12,22 +12,27 @@ interface MovieDetailsModalProps {
 }
 
 export default function MovieDetailsModal({ movie, onClose, language }: MovieDetailsModalProps) {
-  const [detailedMovie, setDetailedMovie] = useState<Movie | null>(null);
-  const [loading, setLoading] = useState(false);
+const [detailedMovie, setDetailedMovie] = useState<Movie | null>(null);
+const [loading, setLoading] = useState(false);
+const [trailerKey, setTrailerKey] = useState<string | null>(null);
+const [trailerLoading, setTrailerLoading] = useState(false);
 
-  useEffect(() => {
-    if (movie) {
-      setLoading(true);
-      fetchMovieDetails(movie.id, language).then((details) => {
-        if (details) {
-          setDetailedMovie(details);
-        } else {
-          setDetailedMovie(movie);
-        }
-        setLoading(false);
-      });
-    }
-  }, [movie, language]);
+useEffect(() => {
+  if (movie) {
+    setLoading(true);
+    setTrailerKey(null);
+    fetchMovieDetails(movie.id, language).then((details) => {
+      setDetailedMovie(details || movie);
+      setLoading(false);
+    });
+
+    setTrailerLoading(true);
+    fetchMovieTrailer(movie.id).then((key) => {
+      setTrailerKey(key);
+      setTrailerLoading(false);
+    });
+  }
+}, [movie, language]);
 
   if (!movie) return null;
 
@@ -49,25 +54,41 @@ export default function MovieDetailsModal({ movie, onClose, language }: MovieDet
           className="bg-black/95 backdrop-blur-xl rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-red-600/30 shadow-2xl"
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Backdrop Image */}
-          {displayMovie.backdropPath && (
-            <div className="relative h-64 overflow-hidden">
-              <img
-                src={getImageUrl(displayMovie.backdropPath, "w1280")}
-                alt={displayMovie.title}
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-linear-to-t from-black via-black/70 to-transparent" />
-              
-              {/* Close Button */}
-              <button
-                onClick={onClose}
-                className="absolute top-4 right-4 w-10 h-10 rounded-full bg-black/70 hover:bg-black/90 flex items-center justify-center transition border border-white/20"
-              >
-                <X className="text-white" size={24} />
-              </button>
-            </div>
-          )}
+  <div className="relative overflow-hidden">
+  {trailerLoading && (
+    <div className="relative h-64 bg-gray-900 flex items-center justify-center">
+      <p className="text-gray-400 text-sm animate-pulse">🎬 Fragman yükleniyor...</p>
+    </div>
+  )}
+
+  {!trailerLoading && trailerKey && (
+    <iframe
+      src={`https://www.youtube.com/embed/${trailerKey}?autoplay=1`}
+      title="Trailer"
+      allow="autoplay; encrypted-media"
+      allowFullScreen
+      className="w-full aspect-video"
+    />
+  )}
+
+  {!trailerLoading && !trailerKey && displayMovie.backdropPath && (
+    <div className="relative h-64">
+      <img
+        src={getImageUrl(displayMovie.backdropPath, "w1280")}
+        alt={displayMovie.title}
+        className="w-full h-full object-cover"
+      />
+      <div className="absolute inset-0 bg-linear-to-t from-black via-black/70 to-transparent" />
+    </div>
+  )}
+
+  <button
+    onClick={onClose}
+    className="absolute top-4 right-4 w-10 h-10 rounded-full bg-black/70 hover:bg-black/90 flex items-center justify-center transition border border-white/20 z-10"
+  >
+    <X className="text-white" size={24} />
+  </button>
+</div>
 
           <div className="p-6">
             <div className="flex flex-col md:flex-row gap-6 mb-6">

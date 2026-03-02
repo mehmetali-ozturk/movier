@@ -177,4 +177,26 @@ export async function fetchMovieDetails(movieId: number, language: Language = "e
   }
 }
 
+export async function fetchMovieTrailer(movieId: number): Promise<string | null> {
+  try {
+    const response = await fetch(
+      `${TMDB_BASE_URL}/movie/${movieId}/videos?api_key=${TMDB_API_KEY}&language=en-US`
+    );
+    if (!response.ok) return null;
+
+    const data = await response.json();
+
+    const trailer = data.results.find(
+      (v: any) => v.site === "YouTube" && v.type === "Trailer"
+    ) || data.results.find(
+      (v: any) => v.site === "YouTube"
+    );
+
+    return trailer ? trailer.key : null;
+  } catch (error) {
+    console.error("Error fetching trailer:", error);
+    return null;
+  }
+}
+
 export { GENRE_MAP };
