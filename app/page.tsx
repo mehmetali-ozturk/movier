@@ -206,7 +206,7 @@ export default function Home() {
           )}
         </div>
 
-        {/* Action Buttons */}
+        {/* Action Buttons  */}
         <div className="flex justify-center gap-4 mb-4">
           <button
             onClick={() => handleSwipe("left")}
