@@ -27,7 +27,7 @@ const TMDB_API_KEY = "a541270bca92f769670f0479054f3a07";
 const TMDB_BASE_URL = "https://api.themoviedb.org/3";
 const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p";
 
-// Genre ID'leri - Türkçe
+// Genre ID'leri
 const GENRE_MAP: Record<number, string> = {
   28: "Aksiyon",
   12: "Macera",
