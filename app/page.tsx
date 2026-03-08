@@ -4,9 +4,11 @@ import { useState, useEffect } from "react";
 import MovieCard from "@/components/MovieCard";
 import MovieDetailsModal from "@/components/MovieDetailsModal";
 import WatchlistPanel from "@/components/WatchlistPanel";
-import { Heart, X, RotateCcw, Info, Languages, List, Film } from "lucide-react";
-import { Movie, fetchMovies, Language } from "@/lib/api";
+import { Heart, X, Info, Languages, List, Film, SlidersHorizontal } from "lucide-react";
+import { Movie, fetchMovies, Language, FilterOptions } from "@/lib/api";
 import { getWatchlist, addToWatchlist, getLikedGenres, getLanguagePreference, setLanguagePreference } from "@/lib/storage";
+import FilterBar from "@/components/FilterBar";
+import EmptyState from "@/components/EmptyState";
 
 export default function Home() {
   const [movies, setMovies] = useState<Movie[]>([]);
@@ -17,7 +19,10 @@ export default function Home() {
   const [language, setLanguage] = useState<Language>("en");
   const [showLanguageMenu, setShowLanguageMenu] = useState(false);
   const [showWatchlistPanel, setShowWatchlistPanel] = useState(false);
+  const [showFilterBar, setShowFilterBar] = useState(false);
+  const [filters, setFilters] = useState<FilterOptions>({});
   const [apiKeyMissing, setApiKeyMissing] = useState(false);
+  const [noResults, setNoResults] = useState(false);
   const [hasMounted, setHasMounted] = useState(false);
 
   useEffect(() => {
@@ -32,19 +37,34 @@ export default function Home() {
     setWatchlist(getWatchlist());
   };
 
-  const loadMovies = async (lang?: Language) => {
+  const loadMovies = async (lang?: Language, newFilters?: FilterOptions) => {
     setLoading(true);
+    setNoResults(false);
     const genres = getLikedGenres();
     const currentLang = lang || language;
-    const newMovies = await fetchMovies(genres, currentLang);
+    const activeFilters = newFilters !== undefined ? newFilters : filters;
+    const newMovies = await fetchMovies(genres, currentLang, activeFilters);
     
+    const hasActiveFilters = Object.values(activeFilters).some(v =>
+      Array.isArray(v) ? v.length > 0 : v !== undefined
+    );
+
     if (newMovies.length === 0) {
-      setApiKeyMissing(true);
+      if (hasActiveFilters) {
+        setNoResults(true);
+      } else {
+        setApiKeyMissing(true);
+      }
     }
     
     setMovies(newMovies);
     setCurrentIndex(0);
     setLoading(false);
+  };
+
+  const handleApplyFilters = (newFilters: FilterOptions) => {
+    setFilters(newFilters);
+    loadMovies(undefined, newFilters);
   };
 
   const handleSwipe = (direction: "left" | "right" | "up") => {
@@ -134,8 +154,22 @@ export default function Home() {
               <span className="text-red-600">Movier</span>
             </h1>
             <div className="flex gap-2">
-              <button
-                onClick={() => setShowWatchlistPanel(true)}
+              <button                onClick={() => setShowFilterBar(prev => !prev)}
+                className={`relative p-2 rounded-lg border transition ${
+                  Object.values(filters).some(v => (Array.isArray(v) ? v.length > 0 : v !== undefined))
+                    ? "bg-red-600 border-red-500 text-white"
+                    : "bg-red-600/20 hover:bg-red-600/30 border-red-600/50"
+                }`}
+                title={language === "en" ? "Filters" : "Filtreler"}
+              >
+                <SlidersHorizontal className="text-red-200" size={20} />
+                {Object.values(filters).some(v => (Array.isArray(v) ? v.length > 0 : v !== undefined)) && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-400 text-black text-xs rounded-full flex items-center justify-center font-bold">
+                    ✓
+                  </span>
+                )}
+              </button>
+              <button                onClick={() => setShowWatchlistPanel(true)}
                 className="relative p-2 rounded-lg bg-red-600/20 hover:bg-red-600/30 border border-red-600/50 transition"
                 title={language === "en" ? "My Watchlist" : "İzleme Listem"}
               >
@@ -182,10 +216,35 @@ export default function Home() {
           </div>
         </div>
 
+        {/* Filter Modal */}
+        <FilterBar
+          isOpen={showFilterBar}
+          filters={filters}
+          onApply={handleApplyFilters}
+          language={language}
+          onClose={() => setShowFilterBar(false)}
+        />
+
         {/* Movie Card Area */}
         <div className="relative h-[600px] flex items-center justify-center mb-6">
           {loading ? (
-            <div className="text-white text-xl">Filmler yükleniyor...</div>
+            <div className="flex flex-col items-center gap-3">
+              <div className="w-12 h-12 border-4 border-red-600/30 border-t-red-600 rounded-full animate-spin" />
+              <p className="text-gray-400 text-sm">
+                {language === "en" ? "Loading movies..." : "Filmler yükleniyor..."}
+              </p>
+            </div>
+          ) : noResults ? (
+            <EmptyState
+              type="no-results"
+              language={language}
+              onEditFilters={() => setShowFilterBar(true)}
+              onClearFilters={() => {
+                const empty: FilterOptions = {};
+                setFilters(empty);
+                loadMovies(undefined, empty);
+              }}
+            />
           ) : currentMovie ? (
             <MovieCard
               movie={currentMovie}
@@ -193,16 +252,11 @@ export default function Home() {
               language={language}
             />
           ) : (
-            <div className="text-center">
-              <p className="text-white text-xl mb-4">Daha fazla film yok!</p>
-              <button
-                onClick={() => loadMovies()}
-                className="flex items-center gap-2 mx-auto px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-medium"
-              >
-                <RotateCcw size={20} />
-                Daha Fazla Yükle
-              </button>
-            </div>
+            <EmptyState
+              type="all-seen"
+              language={language}
+              onLoadMore={() => loadMovies()}
+            />
           )}
         </div>
 

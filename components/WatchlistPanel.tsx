@@ -1,10 +1,10 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Star, Calendar, Trash2, ExternalLink, Film } from "lucide-react";
+import { X, Star, Calendar, Trash2, ExternalLink, Film, Search, ArrowUpDown } from "lucide-react";
 import { Movie, getImageUrl, Language, fetchMovieDetails } from "@/lib/api";
 import { removeFromWatchlist, clearWatchlist } from "@/lib/storage";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 
 interface WatchlistPanelProps {
   isOpen: boolean;
@@ -18,6 +18,9 @@ export default function WatchlistPanel({ isOpen, onClose, watchlist, onUpdate, l
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [localizedMovies, setLocalizedMovies] = useState<Movie[]>([]);
   const [loading, setLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState<"default" | "rating" | "year" | "title">("default");
+  const [activeGenreFilter, setActiveGenreFilter] = useState<string | null>(null);
 
   // Dil değiştiğinde watchlist'teki filmleri yeni dilde çek
   useEffect(() => {
@@ -36,6 +39,45 @@ export default function WatchlistPanel({ isOpen, onClose, watchlist, onUpdate, l
   }, [isOpen, watchlist, language]);
 
   const displayMovies = localizedMovies.length > 0 ? localizedMovies : watchlist;
+
+  const allGenres = useMemo(() => {
+    const genreSet = new Set<string>();
+    displayMovies.forEach(m => m.genres?.forEach(g => genreSet.add(g)));
+    return Array.from(genreSet).sort();
+  }, [displayMovies]);
+
+  const filteredMovies = useMemo(() => {
+    let result = [...displayMovies];
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(
+        m =>
+          m.title?.toLowerCase().includes(q) ||
+          m.originalTitle?.toLowerCase().includes(q)
+      );
+    }
+
+    if (activeGenreFilter) {
+      result = result.filter(m => m.genres?.includes(activeGenreFilter));
+    }
+
+    switch (sortBy) {
+      case "rating":
+        result.sort((a, b) => (b.voteAverage || 0) - (a.voteAverage || 0));
+        break;
+      case "year":
+        result.sort((a, b) => (b.releaseDate || "").localeCompare(a.releaseDate || ""));
+        break;
+      case "title":
+        result.sort((a, b) => (a.title || "").localeCompare(b.title || ""));
+        break;
+      default:
+        break;
+    }
+
+    return result;
+  }, [displayMovies, searchQuery, sortBy, activeGenreFilter]);
 
   const handleRemove = (movieId: number) => {
     removeFromWatchlist(movieId);
@@ -86,13 +128,82 @@ export default function WatchlistPanel({ isOpen, onClose, watchlist, onUpdate, l
               
               {/* Clear All Button */}
               {watchlist.length > 0 && (
-                <button
-                  onClick={() => setShowClearConfirm(true)}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg transition border border-red-600/30"
-                >
-                  <Trash2 size={18} />
-                    {language === "en"? "Clear All?": "Tüm Listeyi Temizle"}
-                </button>
+                <>
+                  <button
+                    onClick={() => setShowClearConfirm(true)}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg transition border border-red-600/30"
+                  >
+                    <Trash2 size={18} />
+                      {language === "en"? "Clear All?": "Tüm Listeyi Temizle"}
+                  </button>
+
+                  {/* Search */}
+                  <div className="relative mt-3">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={e => setSearchQuery(e.target.value)}
+                      placeholder={language === "en" ? "Search watchlist..." : "Listede ara..."}
+                      className="w-full bg-white/5 border border-white/20 rounded-lg pl-9 pr-4 py-2 text-white text-sm placeholder-gray-500 focus:outline-none focus:border-red-600/50"
+                    />
+                  </div>
+
+                  {/* Sort Buttons */}
+                  <div className="flex gap-1.5 mt-2 flex-wrap">
+                    <span className="flex items-center gap-1 text-gray-400 text-xs mr-1">
+                      <ArrowUpDown size={12} />
+                      {language === "en" ? "Sort:" : "Sırala:"}
+                    </span>
+                    {([
+                      { key: "default", en: "Added", tr: "Ekleme" },
+                      { key: "rating", en: "Rating", tr: "Puan" },
+                      { key: "year", en: "Year", tr: "Yıl" },
+                      { key: "title", en: "A-Z", tr: "A-Z" },
+                    ] as const).map(opt => (
+                      <button
+                        key={opt.key}
+                        onClick={() => setSortBy(opt.key)}
+                        className={`px-2.5 py-1 rounded-full text-xs transition border ${
+                          sortBy === opt.key
+                            ? "bg-red-600 border-red-500 text-white"
+                            : "bg-white/5 border-white/20 text-gray-400 hover:text-white"
+                        }`}
+                      >
+                        {language === "tr" ? opt.tr : opt.en}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Genre Filter Pills */}
+                  {allGenres.length > 0 && (
+                    <div className="flex gap-1.5 mt-2 flex-wrap">
+                      <button
+                        onClick={() => setActiveGenreFilter(null)}
+                        className={`px-2.5 py-1 rounded-full text-xs transition border ${
+                          activeGenreFilter === null
+                            ? "bg-red-600 border-red-500 text-white"
+                            : "bg-white/5 border-white/20 text-gray-400 hover:text-white"
+                        }`}
+                      >
+                        {language === "en" ? "All" : "Hepsi"}
+                      </button>
+                      {allGenres.map(genre => (
+                        <button
+                          key={genre}
+                          onClick={() => setActiveGenreFilter(activeGenreFilter === genre ? null : genre)}
+                          className={`px-2.5 py-1 rounded-full text-xs transition border ${
+                            activeGenreFilter === genre
+                              ? "bg-red-600 border-red-500 text-white"
+                              : "bg-white/5 border-white/20 text-gray-400 hover:text-white"
+                          }`}
+                        >
+                          {genre}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </>
               )}
             </div>
 
@@ -137,7 +248,12 @@ export default function WatchlistPanel({ isOpen, onClose, watchlist, onUpdate, l
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {displayMovies.map((movie) => (
+                  {filteredMovies.length === 0 ? (
+                    <p className="text-center text-gray-400 py-8">
+                      {language === "en" ? "No movies match your search." : "Arama kriterlerine uyan film bulunamadı."}
+                    </p>
+                  ) : (
+                  filteredMovies.map((movie) => (
                     <motion.div
                       key={movie.id}
                       initial={{ opacity: 0, y: 20 }}
@@ -213,7 +329,8 @@ export default function WatchlistPanel({ isOpen, onClose, watchlist, onUpdate, l
                         </div>
                       </div>
                     </motion.div>
-                  ))}
+                  ))
+                  )}
                 </div>
               )}
             </div>

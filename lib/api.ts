@@ -15,6 +15,14 @@ export interface Movie {
 
 export type Language = "tr" | "en" | "es" | "fr" | "de" | "it" | "ja" | "ko";
 
+export interface FilterOptions {
+  genreIds?: number[];
+  minRating?: number;
+  yearFrom?: number;
+  yearTo?: number;
+  minVoteCount?: number;
+}
+
 const TMDB_API_KEY = "a541270bca92f769670f0479054f3a07";
 const TMDB_BASE_URL = "https://api.themoviedb.org/3";
 const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p";
@@ -48,8 +56,19 @@ export function getImageUrl(path: string, size: string = "w500"): string {
 
 export async function fetchMovies(
   preferredGenres: number[] = [],
-  language: Language = "en"
+  language: Language = "en",
+  filters: FilterOptions = {}
 ): Promise<Movie[]> {
+  const hasFilters =
+    (filters.genreIds && filters.genreIds.length > 0) ||
+    !!filters.minRating ||
+    !!filters.yearFrom ||
+    !!filters.yearTo;
+
+  if (hasFilters) {
+    return fetchFilteredMovies(language, filters);
+  }
+
   const allMovies: Movie[] = [];
   
   // %90 rastgele popüler filmler, %10 beğenilen türler
@@ -106,6 +125,58 @@ export async function fetchMovies(
       
   } catch (error) {
     console.error("Error fetching movies:", error);
+    return [];
+  }
+}
+
+async function fetchFilteredMovies(language: Language, filters: FilterOptions): Promise<Movie[]> {
+  const allMovies: Movie[] = [];
+
+  try {
+    const pageOffsets = [Math.floor(Math.random() * 5) + 1, Math.floor(Math.random() * 5) + 1];
+
+    const responses = await Promise.all(
+      pageOffsets.map(page => {
+        const params = new URLSearchParams({
+          api_key: TMDB_API_KEY,
+          language,
+          sort_by: "popularity.desc",
+          include_adult: "false",
+          "vote_count.gte": String(filters.minVoteCount ?? 30),
+          page: String(page),
+        });
+
+        if (filters.genreIds && filters.genreIds.length > 0) {
+          params.set("with_genres", filters.genreIds.join(","));
+        }
+        if (filters.minRating) {
+          params.set("vote_average.gte", String(filters.minRating));
+        }
+        if (filters.yearFrom) {
+          params.set("primary_release_date.gte", `${filters.yearFrom}-01-01`);
+        }
+        if (filters.yearTo) {
+          params.set("primary_release_date.lte", `${filters.yearTo}-12-31`);
+        }
+
+        return fetch(`${TMDB_BASE_URL}/discover/movie?${params}`);
+      })
+    );
+
+    for (const response of responses) {
+      if (response.ok) {
+        const data = await response.json();
+        allMovies.push(...processMovies(data.results));
+      }
+    }
+
+    const uniqueMovies = Array.from(
+      new Map(allMovies.map(movie => [movie.id, movie])).values()
+    );
+
+    return uniqueMovies.sort(() => Math.random() - 0.5).slice(0, 40);
+  } catch (error) {
+    console.error("Error fetching filtered movies:", error);
     return [];
   }
 }
