@@ -23,9 +23,17 @@ export interface FilterOptions {
   minVoteCount?: number;
 }
 
-const TMDB_API_KEY = "a541270bca92f769670f0479054f3a07";
-const TMDB_BASE_URL = "https://api.themoviedb.org/3";
 const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p";
+
+// Route all TMDB calls through our server-side proxy (/api/tmdb)
+// so the API key is never exposed in the browser bundle.
+function tmdb(path: string, params: Record<string, string> = {}): Promise<Response> {
+  const qs = new URLSearchParams({ path, ...params });
+  return fetch(`/api/tmdb?${qs}`);
+}
+
+// In-memory cache keyed by "movieId-language". Lives for the tab session.
+const movieDetailsCache = new Map<string, Movie>();
 
 // Genre ID'leri
 const GENRE_MAP: Record<number, string> = {
@@ -76,9 +84,10 @@ export async function fetchMovies(
   
   try {
     // Popüler filmler (seçilen dilde)
-    const popularResponse = await fetch(
-      `${TMDB_BASE_URL}/movie/popular?api_key=${TMDB_API_KEY}&language=${language}&page=${Math.floor(Math.random() * 5) + 1}`
-    );
+    const popularResponse = await tmdb("/movie/popular", {
+      language,
+      page: String(Math.floor(Math.random() * 5) + 1),
+    });
     
     if (popularResponse.ok) {
       const data = await popularResponse.json();
@@ -87,9 +96,10 @@ export async function fetchMovies(
     }
     
     // Top rated filmler (seçilen dilde)
-    const topRatedResponse = await fetch(
-      `${TMDB_BASE_URL}/movie/top_rated?api_key=${TMDB_API_KEY}&language=${language}&page=${Math.floor(Math.random() * 5) + 1}`
-    );
+    const topRatedResponse = await tmdb("/movie/top_rated", {
+      language,
+      page: String(Math.floor(Math.random() * 5) + 1),
+    });
     
     if (topRatedResponse.ok) {
       const data = await topRatedResponse.json();
@@ -100,9 +110,12 @@ export async function fetchMovies(
     // Beğenilen türlerden filmler
     if (usePreferredGenre && preferredGenres.length > 0) {
       const genreId = preferredGenres[Math.floor(Math.random() * preferredGenres.length)];
-      const genreResponse = await fetch(
-        `${TMDB_BASE_URL}/discover/movie?api_key=${TMDB_API_KEY}&language=${language}&with_genres=${genreId}&sort_by=popularity.desc&page=${Math.floor(Math.random() * 3) + 1}`
-      );
+      const genreResponse = await tmdb("/discover/movie", {
+        language,
+        with_genres: String(genreId),
+        sort_by: "popularity.desc",
+        page: String(Math.floor(Math.random() * 3) + 1),
+      });
       
       if (genreResponse.ok) {
         const data = await genreResponse.json();
@@ -137,29 +150,20 @@ async function fetchFilteredMovies(language: Language, filters: FilterOptions): 
 
     const responses = await Promise.all(
       pageOffsets.map(page => {
-        const params = new URLSearchParams({
-          api_key: TMDB_API_KEY,
+        const params: Record<string, string> = {
           language,
           sort_by: "popularity.desc",
           include_adult: "false",
           "vote_count.gte": String(filters.minVoteCount ?? 30),
           page: String(page),
-        });
-
+        };
         if (filters.genreIds && filters.genreIds.length > 0) {
-          params.set("with_genres", filters.genreIds.join(","));
+          params["with_genres"] = filters.genreIds.join(",");
         }
-        if (filters.minRating) {
-          params.set("vote_average.gte", String(filters.minRating));
-        }
-        if (filters.yearFrom) {
-          params.set("primary_release_date.gte", `${filters.yearFrom}-01-01`);
-        }
-        if (filters.yearTo) {
-          params.set("primary_release_date.lte", `${filters.yearTo}-12-31`);
-        }
-
-        return fetch(`${TMDB_BASE_URL}/discover/movie?${params}`);
+        if (filters.minRating) params["vote_average.gte"] = String(filters.minRating);
+        if (filters.yearFrom) params["primary_release_date.gte"] = `${filters.yearFrom}-01-01`;
+        if (filters.yearTo) params["primary_release_date.lte"] = `${filters.yearTo}-12-31`;
+        return tmdb("/discover/movie", params);
       })
     );
 
@@ -204,11 +208,12 @@ function processMovies(items: any[]): Movie[] {
 }
 
 export async function fetchMovieDetails(movieId: number, language: Language = "en"): Promise<Movie | null> {
+  const cacheKey = `${movieId}-${language}`;
+  if (movieDetailsCache.has(cacheKey)) return movieDetailsCache.get(cacheKey)!;
+
   try {
     // Önce seçilen dilde dene
-    let response = await fetch(
-      `${TMDB_BASE_URL}/movie/${movieId}?api_key=${TMDB_API_KEY}&language=${language}`
-    );
+    let response = await tmdb(`/movie/${movieId}`, { language });
     
     if (!response.ok) return null;
     
@@ -217,9 +222,7 @@ export async function fetchMovieDetails(movieId: number, language: Language = "e
     // Eğer açıklama yoksa İngilizce'den al (fallback)
     if (!data.overview && language !== "en") {
       console.log(`No overview in ${language}, falling back to English`);
-      const fallbackResponse = await fetch(
-        `${TMDB_BASE_URL}/movie/${movieId}?api_key=${TMDB_API_KEY}&language=en`
-      );
+      const fallbackResponse = await tmdb(`/movie/${movieId}`, { language: "en" });
       
       if (fallbackResponse.ok) {
         const fallbackData = await fallbackResponse.json();
@@ -228,7 +231,7 @@ export async function fetchMovieDetails(movieId: number, language: Language = "e
       }
     }
     
-    return {
+    const movie: Movie = {
       id: data.id,
       title: data.title || data.original_title,
       originalTitle: data.original_title,
@@ -242,6 +245,8 @@ export async function fetchMovieDetails(movieId: number, language: Language = "e
       language: data.original_language,
       runtime: data.runtime,
     };
+    movieDetailsCache.set(cacheKey, movie);
+    return movie;
   } catch (error) {
     console.error("Error fetching movie details:", error);
     return null;
@@ -250,9 +255,7 @@ export async function fetchMovieDetails(movieId: number, language: Language = "e
 
 export async function fetchMovieTrailer(movieId: number): Promise<string | null> {
   try {
-    const response = await fetch(
-      `${TMDB_BASE_URL}/movie/${movieId}/videos?api_key=${TMDB_API_KEY}&language=en-US`
-    );
+    const response = await tmdb(`/movie/${movieId}/videos`, { language: "en-US" });
     if (!response.ok) return null;
 
     const data = await response.json();

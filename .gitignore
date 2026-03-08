@@ -42,3 +42,6 @@ next-env.d.ts
 
 # npm
 .npmrc
+
+# supabase
+supabase_migration.sql

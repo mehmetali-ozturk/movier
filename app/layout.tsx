@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { AuthProvider } from "@/lib/auth-context";
 
 export const metadata: Metadata = {
   title: "Movier - Bir Sonraki Favori Filmini Keşfet",
@@ -14,7 +15,9 @@ export default function RootLayout({
     return (
         <html lang="tr">
         <body className="antialiased" suppressHydrationWarning>
-        {children}
+        <AuthProvider>
+          {children}
+        </AuthProvider>
         </body>
         </html>
     );

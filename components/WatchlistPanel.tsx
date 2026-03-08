@@ -3,7 +3,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Star, Calendar, Trash2, ExternalLink, Film, Search, ArrowUpDown } from "lucide-react";
 import { Movie, getImageUrl, Language, fetchMovieDetails } from "@/lib/api";
-import { removeFromWatchlist, clearWatchlist } from "@/lib/storage";
 import { useState, useEffect, useMemo } from "react";
 
 interface WatchlistPanelProps {
@@ -11,10 +10,12 @@ interface WatchlistPanelProps {
   onClose: () => void;
   watchlist: Movie[];
   onUpdate: () => void;
+  onRemove: (movieId: number) => void;
+  onClearAll: () => void;
   language: Language;
 }
 
-export default function WatchlistPanel({ isOpen, onClose, watchlist, onUpdate, language }: WatchlistPanelProps) {
+export default function WatchlistPanel({ isOpen, onClose, watchlist, onUpdate, onRemove, onClearAll, language }: WatchlistPanelProps) {
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [localizedMovies, setLocalizedMovies] = useState<Movie[]>([]);
   const [loading, setLoading] = useState(false);
@@ -22,20 +23,34 @@ export default function WatchlistPanel({ isOpen, onClose, watchlist, onUpdate, l
   const [sortBy, setSortBy] = useState<"default" | "rating" | "year" | "title">("default");
   const [activeGenreFilter, setActiveGenreFilter] = useState<string | null>(null);
 
-  // Dil değiştiğinde watchlist'teki filmleri yeni dilde çek
+  // Fetch movie details in batches to avoid hammering TMDB rate limits.
+  // Results are cached in api.ts so subsequent opens are instant.
   useEffect(() => {
-    if (isOpen && watchlist.length > 0) {
-      setLoading(true);
-      Promise.all(
-        watchlist.map(movie => fetchMovieDetails(movie.id, language))
-      ).then(results => {
-        const validMovies = results.filter((m): m is Movie => m !== null);
-        setLocalizedMovies(validMovies);
-        setLoading(false);
-      });
-    } else {
+    if (!isOpen || watchlist.length === 0) {
       setLocalizedMovies([]);
+      return;
     }
+
+    let cancelled = false;
+    setLoading(true);
+
+    async function fetchInBatches() {
+      const BATCH = 5;
+      const results: Movie[] = [];
+      for (let i = 0; i < watchlist.length; i += BATCH) {
+        if (cancelled) return;
+        const chunk = watchlist.slice(i, i + BATCH);
+        const fetched = await Promise.all(chunk.map(m => fetchMovieDetails(m.id, language)));
+        fetched.forEach(m => { if (m) results.push(m); });
+      }
+      if (!cancelled) {
+        setLocalizedMovies(results);
+        setLoading(false);
+      }
+    }
+
+    fetchInBatches();
+    return () => { cancelled = true; };
   }, [isOpen, watchlist, language]);
 
   const displayMovies = localizedMovies.length > 0 ? localizedMovies : watchlist;
@@ -80,12 +95,12 @@ export default function WatchlistPanel({ isOpen, onClose, watchlist, onUpdate, l
   }, [displayMovies, searchQuery, sortBy, activeGenreFilter]);
 
   const handleRemove = (movieId: number) => {
-    removeFromWatchlist(movieId);
+    onRemove(movieId);
     onUpdate();
   };
 
   const handleClearAll = () => {
-    clearWatchlist();
+    onClearAll();
     onUpdate();
     setShowClearConfirm(false);
   };

@@ -4,13 +4,19 @@ import { useState, useEffect } from "react";
 import MovieCard from "@/components/MovieCard";
 import MovieDetailsModal from "@/components/MovieDetailsModal";
 import WatchlistPanel from "@/components/WatchlistPanel";
-import { Heart, X, Info, Languages, List, Film, SlidersHorizontal } from "lucide-react";
+import { Heart, X, Info, Languages, List, Film, SlidersHorizontal, LogIn } from "lucide-react";
 import { Movie, fetchMovies, Language, FilterOptions } from "@/lib/api";
-import { getWatchlist, addToWatchlist, getLikedGenres, getLanguagePreference, setLanguagePreference } from "@/lib/storage";
+import { getWatchlist, addToWatchlist, removeFromWatchlist, clearWatchlist, getLikedGenres, getLanguagePreference, setLanguagePreference } from "@/lib/storage";
+import { cloudGetWatchlist, cloudAddToWatchlist, cloudRemoveFromWatchlist, cloudClearWatchlist, cloudGetLanguage, cloudSetLanguage, migrateLocalToCloud } from "@/lib/storage.cloud";
+import { useAuth } from "@/lib/auth-context";
+import AuthModal from "@/components/AuthModal";
+import ProfilePanel from "@/components/ProfilePanel";
 import FilterBar from "@/components/FilterBar";
 import EmptyState from "@/components/EmptyState";
 
 export default function Home() {
+  const { user, loading: authLoading, signOut } = useAuth();
+
   const [movies, setMovies] = useState<Movie[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -20,21 +26,49 @@ export default function Home() {
   const [showLanguageMenu, setShowLanguageMenu] = useState(false);
   const [showWatchlistPanel, setShowWatchlistPanel] = useState(false);
   const [showFilterBar, setShowFilterBar] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showProfilePanel, setShowProfilePanel] = useState(false);
   const [filters, setFilters] = useState<FilterOptions>({});
   const [apiKeyMissing, setApiKeyMissing] = useState(false);
   const [noResults, setNoResults] = useState(false);
   const [hasMounted, setHasMounted] = useState(false);
 
+  // Initial mount: load language and movies (auth-independent)
   useEffect(() => {
     setHasMounted(true);
     const savedLanguage = getLanguagePreference();
     setLanguage(savedLanguage);
     loadMovies(savedLanguage);
-    updateWatchlist();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const updateWatchlist = () => {
-    setWatchlist(getWatchlist());
+  // Load watchlist whenever auth state resolves or changes
+  useEffect(() => {
+    if (authLoading) return;
+    if (user) {
+      // Migrate any local data, then load from cloud
+      const localMovies = getWatchlist();
+      migrateLocalToCloud(user.id, localMovies).then(() =>
+        cloudGetWatchlist(user.id).then(setWatchlist)
+      );
+      // Sync language pref from cloud (cloud wins if set)
+      cloudGetLanguage(user.id).then(lang => {
+        if (lang) {
+          setLanguage(lang as Language);
+          setLanguagePreference(lang as Language);
+        }
+      });
+    } else {
+      setWatchlist(getWatchlist());
+    }
+  }, [user, authLoading]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const updateWatchlist = async () => {
+    if (user) {
+      const cloud = await cloudGetWatchlist(user.id);
+      setWatchlist(cloud);
+    } else {
+      setWatchlist(getWatchlist());
+    }
   };
 
   const loadMovies = async (lang?: Language, newFilters?: FilterOptions) => {
@@ -76,10 +110,20 @@ export default function Home() {
     }
 
     if (direction === "right") {
-      addToWatchlist(movies[currentIndex]);
-      updateWatchlist();
+      const movie = movies[currentIndex];
+      // Optimistic UI: update badge immediately
+      setWatchlist(prev => (prev.some(m => m.id === movie.id) ? prev : [movie, ...prev]));
+      // Persist in background — don't block the card animation
+      if (user) {
+        cloudAddToWatchlist(movie.id, user.id).then(() =>
+          cloudGetWatchlist(user.id).then(setWatchlist)
+        );
+      } else {
+        addToWatchlist(movie);
+      }
     }
 
+    // Advance card immediately regardless of direction
     setCurrentIndex(prev => prev + 1);
 
     if (currentIndex >= movies.length - 3) {
@@ -87,9 +131,28 @@ export default function Home() {
     }
   };
 
+  const handleRemoveFromWatchlist = async (movieId: number) => {
+    if (user) {
+      await cloudRemoveFromWatchlist(movieId, user.id);
+    } else {
+      removeFromWatchlist(movieId);
+    }
+    await updateWatchlist();
+  };
+
+  const handleClearWatchlist = async () => {
+    if (user) {
+      await cloudClearWatchlist(user.id);
+    } else {
+      clearWatchlist();
+    }
+    await updateWatchlist();
+  };
+
   const handleLanguageChange = (newLang: Language) => {
     setLanguage(newLang);
     setLanguagePreference(newLang);
+    if (user) cloudSetLanguage(user.id, newLang);
     setShowLanguageMenu(false);
     loadMovies(newLang);
   };
@@ -117,14 +180,14 @@ export default function Home() {
           </div>
           <h2 className="text-2xl font-semibold text-red-300 mb-4">TMDB API Key Gerekli</h2>
           <p className="text-gray-300 mb-4">
-            Bu uygulamayı kullanmak için TMDB (The Movie Database) API key'ine ihtiyacınız var.
+            Bu uygulamayı kullanmak için TMDB (The Movie Database) API key&apos;ine ihtiyacınız var.
           </p>
           <div className="bg-gray-900/50 rounded-2xl p-6 mb-4">
             <h3 className="text-xl font-semibold text-white mb-3">Nasıl Alınır?</h3>
             <ol className="list-decimal list-inside text-gray-300 space-y-2">
               <li>
                 <a href="https://www.themoviedb.org/signup" target="_blank" rel="noopener noreferrer" className="text-red-400 hover:underline">
-                  TMDB'ye kaydolun
+                  TMDB&apos;ye kaydolun
                 </a>
               </li>
               <li>Hesap ayarlarından API bölümüne gidin</li>
@@ -154,6 +217,7 @@ export default function Home() {
               <span className="text-red-600">Movier</span>
             </h1>
             <div className="flex gap-2">
+              {/* Filter button */}
               <button onClick={() => setShowFilterBar(prev => !prev)}
                 className={`relative p-2 rounded-lg border transition ${Object.values(filters).some(v => (Array.isArray(v) ? v.length > 0 : v !== undefined))
                     ? "bg-red-600 border-red-500 text-white"
@@ -168,6 +232,7 @@ export default function Home() {
                   </span>
                 )}
               </button>
+              {/* Watchlist button */}
               <button onClick={() => setShowWatchlistPanel(true)}
                 className="relative p-2 rounded-lg bg-red-600/20 hover:bg-red-600/30 border border-red-600/50 transition"
                 title={language === "en" ? "My Watchlist" : "İzleme Listem"}
@@ -179,6 +244,7 @@ export default function Home() {
                   </span>
                 )}
               </button>
+              {/* Language button */}
               <div className="relative">
                 <button
                   onClick={() => setShowLanguageMenu(!showLanguageMenu)}
@@ -202,6 +268,37 @@ export default function Home() {
                   </div>
                 )}
               </div>
+              {/* Auth button */}
+              {!authLoading && (
+                user ? (
+                  <button
+                    onClick={() => setShowProfilePanel(true)}
+                    className="p-2 rounded-lg bg-green-600/20 hover:bg-green-600/30 border border-green-600/50 transition"
+                    title={user.email ?? "Profile"}
+                  >
+                    {user.user_metadata?.avatar_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={user.user_metadata.avatar_url as string}
+                        alt="avatar"
+                        className="w-5 h-5 rounded-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-green-400 text-xs font-bold w-5 h-5 flex items-center justify-center">
+                        {(user.email ?? "U").slice(0, 2).toUpperCase()}
+                      </span>
+                    )}
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setShowAuthModal(true)}
+                    className="p-2 rounded-lg bg-blue-600/20 hover:bg-blue-600/30 border border-blue-600/50 transition"
+                    title={language === "en" ? "Sign in" : "Giriş yap"}
+                  >
+                    <LogIn className="text-blue-400" size={20} />
+                  </button>
+                )
+              )}
             </div>
           </div>
           <p className="text-gray-400 text-sm mb-2">
@@ -297,8 +394,27 @@ export default function Home() {
         onClose={() => setShowWatchlistPanel(false)}
         watchlist={watchlist}
         onUpdate={updateWatchlist}
+        onRemove={handleRemoveFromWatchlist}
+        onClearAll={handleClearWatchlist}
         language={language}
       />
+
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        language={language}
+      />
+
+      {user && (
+        <ProfilePanel
+          isOpen={showProfilePanel}
+          onClose={() => setShowProfilePanel(false)}
+          user={user}
+          language={language}
+          watchlistCount={watchlist.length}
+          onSignOut={signOut}
+        />
+      )}
     </main>
   );
 }
