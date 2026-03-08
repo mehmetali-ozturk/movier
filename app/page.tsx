@@ -246,11 +246,12 @@ export default function Home() {
               }}
             />
           ) : currentMovie ? (
-            <MovieCard
-              movie={currentMovie}
-              onSwipe={handleSwipe}
-              language={language}
-            />
+           <MovieCard
+  movie={currentMovie}
+  nextMovie={movies[currentIndex + 1]}
+  onSwipe={handleSwipe}
+  language={language}
+/>
           ) : (
             <EmptyState
               type="all-seen"
