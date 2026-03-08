@@ -25,7 +25,7 @@ export default function MovieCard({ movie, nextMovie, onSwipe, language }: Movie
   const nopeOpacity = useTransform(x, [-80, 0], [1, 0]);
   const upOpacity = useTransform(y, [-80, 0], [1, 0]);
 
-  // Arka kart scale (öne gelince büyüsün)
+  // Arka kart scale
   const backCardScale = useTransform(x, [-250, 0, 250], [1, 0.92, 1]);
   const backCardOpacity = useTransform(x, [-250, -100, 0, 100, 250], [1, 0.8, 0.6, 0.8, 1]);
   const backCardBlur = useTransform(x, [-250, 0, 250], [0, 8, 0]);
