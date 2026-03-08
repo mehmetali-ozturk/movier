@@ -44,7 +44,7 @@ export default function Home() {
     const currentLang = lang || language;
     const activeFilters = newFilters !== undefined ? newFilters : filters;
     const newMovies = await fetchMovies(genres, currentLang, activeFilters);
-    
+
     const hasActiveFilters = Object.values(activeFilters).some(v =>
       Array.isArray(v) ? v.length > 0 : v !== undefined
     );
@@ -56,7 +56,7 @@ export default function Home() {
         setApiKeyMissing(true);
       }
     }
-    
+
     setMovies(newMovies);
     setCurrentIndex(0);
     setLoading(false);
@@ -154,12 +154,11 @@ export default function Home() {
               <span className="text-red-600">Movier</span>
             </h1>
             <div className="flex gap-2">
-              <button                onClick={() => setShowFilterBar(prev => !prev)}
-                className={`relative p-2 rounded-lg border transition ${
-                  Object.values(filters).some(v => (Array.isArray(v) ? v.length > 0 : v !== undefined))
+              <button onClick={() => setShowFilterBar(prev => !prev)}
+                className={`relative p-2 rounded-lg border transition ${Object.values(filters).some(v => (Array.isArray(v) ? v.length > 0 : v !== undefined))
                     ? "bg-red-600 border-red-500 text-white"
                     : "bg-red-600/20 hover:bg-red-600/30 border-red-600/50"
-                }`}
+                  }`}
                 title={language === "en" ? "Filters" : "Filtreler"}
               >
                 <SlidersHorizontal className="text-red-200" size={20} />
@@ -169,7 +168,7 @@ export default function Home() {
                   </span>
                 )}
               </button>
-              <button                onClick={() => setShowWatchlistPanel(true)}
+              <button onClick={() => setShowWatchlistPanel(true)}
                 className="relative p-2 rounded-lg bg-red-600/20 hover:bg-red-600/30 border border-red-600/50 transition"
                 title={language === "en" ? "My Watchlist" : "İzleme Listem"}
               >
@@ -194,9 +193,8 @@ export default function Home() {
                       <button
                         key={lang}
                         onClick={() => handleLanguageChange(lang)}
-                        className={`w-full px-4 py-3 text-left hover:bg-red-600/20 transition ${
-                          language === lang ? "bg-red-600/30 text-white" : "text-gray-300"
-                        }`}
+                        className={`w-full px-4 py-3 text-left hover:bg-red-600/20 transition ${language === lang ? "bg-red-600/30 text-white" : "text-gray-300"
+                          }`}
                       >
                         {languageLabels[lang]}
                       </button>
@@ -206,9 +204,9 @@ export default function Home() {
               </div>
             </div>
           </div>
-            <p className="text-gray-400 text-sm mb-2">
-                {language === "en" ? "Swipe to discover movies" : "Filmleri kaydırarak keşfet"}
-            </p>
+          <p className="text-gray-400 text-sm mb-2">
+            {language === "en" ? "Swipe to discover movies" : "Filmleri kaydırarak keşfet"}
+          </p>
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-red-600/10 border border-red-600/30 rounded-full">
             <Heart className="text-red-500" size={16} fill="currentColor" />
             <span className="text-white font-medium">{hasMounted ? watchlist.length : 0}</span>
@@ -246,12 +244,13 @@ export default function Home() {
               }}
             />
           ) : currentMovie ? (
-           <MovieCard
-  movie={currentMovie}
-  nextMovie={movies[currentIndex + 1]}
-  onSwipe={handleSwipe}
-  language={language}
-/>
+            <MovieCard
+              key={currentMovie.id}
+              movie={currentMovie}
+              nextMovie={movies[currentIndex + 1]}
+              onSwipe={handleSwipe}
+              language={language}
+            />
           ) : (
             <EmptyState
               type="all-seen"
