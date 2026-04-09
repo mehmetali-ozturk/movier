@@ -103,6 +103,12 @@ lib/
 supabase_migration.sql
 ```
 
+## Contributors
+
+- Mehmet Ali Ozturk
+- Deniz Eren Gencturk
+- Ali Yekta Dalkilic
+
 ## License
 
 MIT. See `LICENSE`.
