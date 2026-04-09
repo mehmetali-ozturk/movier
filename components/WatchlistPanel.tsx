@@ -2,8 +2,9 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Star, Calendar, Trash2, ExternalLink, Film, Search, ArrowUpDown } from "lucide-react";
-import { Movie, getImageUrl, Language, fetchMovieDetails } from "@/lib/api";
+import { Movie, Language, fetchMovieDetails } from "@/lib/api";
 import { useState, useEffect, useMemo } from "react";
+import TmdbImage from "@/components/TmdbImage";
 
 interface WatchlistPanelProps {
   isOpen: boolean;
@@ -279,10 +280,13 @@ export default function WatchlistPanel({ isOpen, onClose, watchlist, onUpdate, o
                       <div className="flex gap-4 p-3">
                         {/* Poster */}
                         {movie.posterPath && (
-                          <img
-                            src={getImageUrl(movie.posterPath, "w185")}
+                          <TmdbImage
+                            path={movie.posterPath}
+                            size="w185"
                             alt={movie.title}
                             className="w-24 h-36 object-cover rounded-lg"
+                            fallbackClassName="w-24 h-36 rounded-lg bg-gray-800 flex items-center justify-center"
+                            iconSize={28}
                           />
                         )}
                         

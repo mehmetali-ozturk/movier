@@ -65,7 +65,8 @@ export function getImageUrl(path: string, size: string = "w500"): string {
 export async function fetchMovies(
   preferredGenres: number[] = [],
   language: Language = "en",
-  filters: FilterOptions = {}
+  filters: FilterOptions = {},
+  excludedMovieIds: number[] = []
 ): Promise<Movie[]> {
   const hasFilters =
     (filters.genreIds && filters.genreIds.length > 0) ||
@@ -74,19 +75,23 @@ export async function fetchMovies(
     !!filters.yearTo;
 
   if (hasFilters) {
-    return fetchFilteredMovies(language, filters);
+    return fetchFilteredMovies(language, filters, excludedMovieIds);
   }
 
   const allMovies: Movie[] = [];
   
+  const excludedSet = new Set(excludedMovieIds);
+
   // %90 rastgele popüler filmler, %10 beğenilen türler
   const usePreferredGenre = preferredGenres.length > 0 && Math.random() < 0.1;
+
+  const randomPage = (max: number = 20) => String(Math.floor(Math.random() * max) + 1);
   
   try {
     // Popüler filmler (seçilen dilde)
     const popularResponse = await tmdb("/movie/popular", {
       language,
-      page: String(Math.floor(Math.random() * 5) + 1),
+      page: randomPage(),
     });
     
     if (popularResponse.ok) {
@@ -98,7 +103,7 @@ export async function fetchMovies(
     // Top rated filmler (seçilen dilde)
     const topRatedResponse = await tmdb("/movie/top_rated", {
       language,
-      page: String(Math.floor(Math.random() * 5) + 1),
+      page: randomPage(),
     });
     
     if (topRatedResponse.ok) {
@@ -114,7 +119,7 @@ export async function fetchMovies(
         language,
         with_genres: String(genreId),
         sort_by: "popularity.desc",
-        page: String(Math.floor(Math.random() * 3) + 1),
+        page: randomPage(15),
       });
       
       if (genreResponse.ok) {
@@ -127,7 +132,7 @@ export async function fetchMovies(
     // Tekrar edenleri kaldır
     const uniqueMovies = Array.from(
       new Map(allMovies.map(movie => [movie.id, movie])).values()
-    );
+    ).filter(movie => !excludedSet.has(movie.id));
     
     console.log(`Total unique movies: ${uniqueMovies.length}`);
     
@@ -142,11 +147,20 @@ export async function fetchMovies(
   }
 }
 
-async function fetchFilteredMovies(language: Language, filters: FilterOptions): Promise<Movie[]> {
+async function fetchFilteredMovies(
+  language: Language,
+  filters: FilterOptions,
+  excludedMovieIds: number[] = []
+): Promise<Movie[]> {
   const allMovies: Movie[] = [];
+  const excludedSet = new Set(excludedMovieIds);
 
   try {
-    const pageOffsets = [Math.floor(Math.random() * 5) + 1, Math.floor(Math.random() * 5) + 1];
+    const pageOffsets = [
+      Math.floor(Math.random() * 20) + 1,
+      Math.floor(Math.random() * 20) + 1,
+      Math.floor(Math.random() * 20) + 1,
+    ];
 
     const responses = await Promise.all(
       pageOffsets.map(page => {
@@ -176,7 +190,7 @@ async function fetchFilteredMovies(language: Language, filters: FilterOptions): 
 
     const uniqueMovies = Array.from(
       new Map(allMovies.map(movie => [movie.id, movie])).values()
-    );
+    ).filter(movie => !excludedSet.has(movie.id));
 
     return uniqueMovies.sort(() => Math.random() - 0.5).slice(0, 40);
   } catch (error) {

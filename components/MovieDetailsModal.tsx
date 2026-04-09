@@ -3,7 +3,8 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Star, Calendar, Clock } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Movie, getImageUrl, fetchMovieDetails, fetchMovieTrailer, Language } from "@/lib/api";
+import { Movie, fetchMovieDetails, fetchMovieTrailer, Language } from "@/lib/api";
+import TmdbImage from "@/components/TmdbImage";
 
 interface MovieDetailsModalProps {
   movie: Movie | null;
@@ -73,8 +74,9 @@ useEffect(() => {
 
   {!trailerLoading && !trailerKey && displayMovie.backdropPath && (
     <div className="relative h-64">
-      <img
-        src={getImageUrl(displayMovie.backdropPath, "w1280")}
+      <TmdbImage
+        path={displayMovie.backdropPath}
+        size="w1280"
         alt={displayMovie.title}
         className="w-full h-full object-cover"
       />
@@ -93,10 +95,13 @@ useEffect(() => {
           <div className="p-6">
             <div className="flex flex-col md:flex-row gap-6 mb-6">
               {displayMovie.posterPath && (
-                <img
-                  src={getImageUrl(displayMovie.posterPath, "w342")}
+                <TmdbImage
+                  path={displayMovie.posterPath}
+                  size="w342"
                   alt={displayMovie.title}
                   className="w-full md:w-48 rounded-xl shadow-lg"
+                  fallbackClassName="w-full md:w-48 rounded-xl shadow-lg bg-gray-800 flex items-center justify-center"
+                  iconSize={64}
                 />
               )}
 

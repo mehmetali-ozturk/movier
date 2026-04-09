@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import MovieCard from "@/components/MovieCard";
 import MovieDetailsModal from "@/components/MovieDetailsModal";
 import WatchlistPanel from "@/components/WatchlistPanel";
@@ -32,6 +32,7 @@ export default function Home() {
   const [apiKeyMissing, setApiKeyMissing] = useState(false);
   const [noResults, setNoResults] = useState(false);
   const [hasMounted, setHasMounted] = useState(false);
+  const seenMovieIdsRef = useRef<Set<number>>(new Set());
 
   // Initial mount: load language and movies (auth-independent)
   useEffect(() => {
@@ -71,13 +72,19 @@ export default function Home() {
     }
   };
 
-  const loadMovies = async (lang?: Language, newFilters?: FilterOptions) => {
+  const loadMovies = async (
+    lang?: Language,
+    newFilters?: FilterOptions,
+    mode: "replace" | "append" = "replace"
+  ) => {
     setLoading(true);
     setNoResults(false);
     const genres = getLikedGenres();
     const currentLang = lang || language;
     const activeFilters = newFilters !== undefined ? newFilters : filters;
-    const newMovies = await fetchMovies(genres, currentLang, activeFilters);
+    const queuedIds = movies.map(m => m.id);
+    const excludedIds = Array.from(new Set([...seenMovieIdsRef.current, ...queuedIds]));
+    const newMovies = await fetchMovies(genres, currentLang, activeFilters, excludedIds);
 
     const hasActiveFilters = Object.values(activeFilters).some(v =>
       Array.isArray(v) ? v.length > 0 : v !== undefined
@@ -91,14 +98,23 @@ export default function Home() {
       }
     }
 
-    setMovies(newMovies);
-    setCurrentIndex(0);
+    if (mode === "append") {
+      setMovies(prev => {
+        const existingIds = new Set(prev.map(m => m.id));
+        const toAppend = newMovies.filter(m => !existingIds.has(m.id));
+        return [...prev, ...toAppend];
+      });
+    } else {
+      setMovies(newMovies);
+      setCurrentIndex(0);
+    }
     setLoading(false);
   };
 
   const handleApplyFilters = (newFilters: FilterOptions) => {
+    seenMovieIdsRef.current.clear();
     setFilters(newFilters);
-    loadMovies(undefined, newFilters);
+    loadMovies(undefined, newFilters, "replace");
   };
 
   const handleSwipe = (direction: "left" | "right" | "up") => {
@@ -109,8 +125,9 @@ export default function Home() {
       return;
     }
 
+    const movie = movies[currentIndex];
+
     if (direction === "right") {
-      const movie = movies[currentIndex];
       // Optimistic UI: update badge immediately
       setWatchlist(prev => (prev.some(m => m.id === movie.id) ? prev : [movie, ...prev]));
       // Persist in background — don't block the card animation
@@ -123,11 +140,14 @@ export default function Home() {
       }
     }
 
-    // Advance card immediately regardless of direction
-    setCurrentIndex(prev => prev + 1);
+    seenMovieIdsRef.current.add(movie.id);
 
-    if (currentIndex >= movies.length - 3) {
-      loadMovies();
+    // Advance card immediately regardless of direction
+    const nextIndex = currentIndex + 1;
+    setCurrentIndex(nextIndex);
+
+    if (nextIndex >= movies.length - 3) {
+      loadMovies(undefined, undefined, "append");
     }
   };
 
@@ -150,11 +170,12 @@ export default function Home() {
   };
 
   const handleLanguageChange = (newLang: Language) => {
+    seenMovieIdsRef.current.clear();
     setLanguage(newLang);
     setLanguagePreference(newLang);
     if (user) cloudSetLanguage(user.id, newLang);
     setShowLanguageMenu(false);
-    loadMovies(newLang);
+    loadMovies(newLang, undefined, "replace");
   };
 
   const languageLabels: Record<Language, string> = {
@@ -335,9 +356,10 @@ export default function Home() {
               language={language}
               onEditFilters={() => setShowFilterBar(true)}
               onClearFilters={() => {
+                seenMovieIdsRef.current.clear();
                 const empty: FilterOptions = {};
                 setFilters(empty);
-                loadMovies(undefined, empty);
+                loadMovies(undefined, empty, "replace");
               }}
             />
           ) : currentMovie ? (
@@ -352,7 +374,7 @@ export default function Home() {
             <EmptyState
               type="all-seen"
               language={language}
-              onLoadMore={() => loadMovies()}
+              onLoadMore={() => loadMovies(undefined, undefined, "append")}
             />
           )}
         </div>

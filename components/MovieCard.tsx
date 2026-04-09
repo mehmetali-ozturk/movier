@@ -1,8 +1,9 @@
 "use client";
 
 import { motion, useMotionValue, useTransform, useSpring, AnimatePresence } from "framer-motion";
-import { Movie, getImageUrl, Language } from "@/lib/api";
+import { Movie, Language } from "@/lib/api";
 import { Star, Calendar, Heart, X, Film, ChevronUp } from "lucide-react";
+import TmdbImage from "@/components/TmdbImage";
 
 interface MovieCardProps {
   movie: Movie;
@@ -61,11 +62,11 @@ export default function MovieCard({ movie, nextMovie, onSwipe, language }: Movie
           }}
         >
           {nextMovie.posterPath ? (
-            <img
-              src={getImageUrl(nextMovie.posterPath, "w500")}
+            <TmdbImage
+              path={nextMovie.posterPath}
+              size="w500"
               alt={nextMovie.title}
               className="w-full h-full object-cover"
-              draggable={false}
             />
           ) : (
             <div className="w-full h-full bg-gray-800" />
@@ -147,11 +148,12 @@ export default function MovieCard({ movie, nextMovie, onSwipe, language }: Movie
           <div className="relative h-full bg-gray-900">
             {movie.posterPath ? (
               <>
-                <img
-                  src={getImageUrl(movie.posterPath, "w500")}
+                <TmdbImage
+                  path={movie.posterPath}
+                  size="w500"
                   alt={movie.title}
                   className="w-full h-full object-cover"
-                  draggable={false}
+                  iconSize={80}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
               </>
