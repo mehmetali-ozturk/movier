@@ -3,7 +3,7 @@
 **Project Name:** Movier
 **Course:** SWE332 Software Architecture Project Part 2
 **Date:** 07.04.2026
-**Team Members:**
+**Team Members:** 
 - Mehmet Ali Öztürk
 - Deniz Eren Gençtürk
 - Ali Yekta Dalkılıç
@@ -68,7 +68,6 @@ Movier adopts a **Cloud-Native / Serverless Architecture** utilizing a **Client-
 **Constraints:**
 * Vercel serverless functions execution time limits.
 * Free-tier limits of third-party services (TMDB API rate limits and Supabase free-tier database sizes).
-* Tight project deadline (April 10th, 2026).
 
 ---
 
@@ -93,15 +92,15 @@ flowchart TD
         LocalDB[(Browser LocalStorage)]
     end
 
-    UI -->|Kullanici Durumunu Okur| AuthCtx
-    UI -->|Film Verilerini Ister| API
-    UI -->|Begenilenleri Kaydeder| StoreClient
+    UI -->|Reads Auth State| AuthCtx
+    UI -->|Requests Movie Data| API
+    UI -->|Saves Liked Movies| StoreClient
     
-    AuthCtx -->|Giris Cikis Islemleri| Supabase
-    API -->|Guvenli Istek API Key Gizli| TMDB
+    AuthCtx -->|Auth Operations| Supabase
+    API -->|Secure Request Hidden API Key| TMDB
     
-    StoreClient -->|Giris Yapildiysa| Supabase
-    StoreClient -->|Anonim Kullaniciysa| LocalDB
+    StoreClient -->|If Authenticated| Supabase
+    StoreClient -->|If Anonymous User| LocalDB
 ```
 
 ---
@@ -111,26 +110,26 @@ Describes the runtime behavior, concurrency, and flow of data when a user intera
 
 ```mermaid
 sequenceDiagram
-    actor User as Kullanici
+    actor User
     participant UI as React UI (MovieCard)
     participant API as Next.js API
     participant TMDB as TMDB API
     participant Store as lib/storage
     participant DB as Supabase DB
 
-    User->>UI: Uygulamayi Acar
-    UI->>API: Film Listesini Ister
-    API->>TMDB: GET /discover/movie (API Key ile)
-    TMDB-->>API: JSON Yaniti
-    API-->>UI: Filmler Ekrana Gelir
-    User->>UI: Saga Kaydirir (Begenir)
+    User->>UI: Opens Application
+    UI->>API: Requests Movie List
+    API->>TMDB: GET /discover/movie (with API Key)
+    TMDB-->>API: JSON Response
+    API-->>UI: Movies Displayed on Screen
+    User->>UI: Swipes Right (Likes)
     UI->>Store: saveMovie(movie_id)
     
-    alt Giris Yapilmissa (Authenticated)
-        Store->>DB: Supabase watchlist tablosuna kaydet
-        DB-->>Store: Basarili
-    else Anonim Kullaniciysa
-        Store->>Store: Tarayici LocalStorage'a kaydet
+    alt If Authenticated
+        Store->>DB: Save to Supabase watchlist table
+        DB-->>Store: Success
+    else If Anonymous User
+        Store->>Store: Save to Browser LocalStorage
     end
 ```
 
@@ -182,12 +181,12 @@ flowchart TD
         TMDB[TMDB Servers]
     end
 
-    Client -->|HTTPS Istekleri| CDN
+    Client -->|HTTPS Requests| CDN
     CDN --> Node
-    Node -->|Guvenli Arka Plan Istegi| TMDB
-    Client -->|Giris Token'i| Auth
-    Client -->|Veri Okuma/Yazma| DB
-    Client -->|Avatar Yukleme| S3
+    Node -->|Secure Background Request| TMDB
+    Client -->|Auth Token| Auth
+    Client -->|Read/Write Data| DB
+    Client -->|Avatar Upload| S3
 ```
 
 ---
