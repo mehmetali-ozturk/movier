@@ -193,7 +193,7 @@ export default function Home() {
               <li>Hesap ayarlarından API bölümüne gidin</li>
               <li>API Key (v3 auth) alın</li>
               <li>
-                <code className="bg-black/50 px-2 py-1 rounded text-sm">lib/api.ts</code> dosyasındaki{" "}
+                <code className="bg-black/50 px-2 py-1 rounded text-sm">.env.local</code> dosyasındaki{" "}
                 <code className="bg-black/50 px-2 py-1 rounded text-sm">TMDB_API_KEY</code> değişkenine yapıştırın
               </li>
             </ol>

@@ -1,124 +1,108 @@
-# 🎬 Movier - Bir Sonraki Favori Filmini Keşfet
+# Movier
 
-Tinder tarzı film keşif uygulaması. Next.js, React, Tailwind CSS ve TMDB API ile geliştirildi.
+Swipe-based movie discovery app built with Next.js and TMDB. The project supports anonymous usage via local storage and authenticated usage via Supabase cloud sync.
 
-## ✨ Özellikler
+## Features
 
-- **Swipe Arayüzü**: Yumuşak kart tabanlı UI ile sürükle-kaydır
-- **TMDB API**: Gerçek film verileri, posterler, puanlar ve açıklamalar
-- **Akıllı Öneriler**: Beğendiğiniz türlere göre öğrenir ve önerir
-- **Dil Seçimi**: Türkçe, İngilizce veya tüm diller
-- **Dark Tema**: Premium glassmorphism tasarım
-- **LocalStorage**: Beğenileriniz tarayıcıda saklanır
-- **Mobil Uyumlu**: Tüm cihazlarda mükemmel çalışır
+- Swipe UI for like / skip interactions
+- Watchlist panel with batched detail loading
+- Movie details modal and trailer support
+- Supabase authentication (email/password + Google OAuth)
+- Cloud watchlist sync (stores only `movie_id`)
+- Avatar upload for email users (Supabase Storage)
+- Server-side TMDB proxy (`/api/tmdb`) with short cache
 
-## 🚀 Kurulum
+## Tech Stack
 
-### Gereksinimler
+- Next.js 16 (App Router)
+- React 19 + TypeScript
+- Tailwind CSS 4
+- Framer Motion
+- Supabase (Auth, Postgres, Storage)
+- TMDB API
 
-- Node.js 18+
-- TMDB API Key (ücretsiz)
+## Getting Started
 
-### TMDB API Key Alma
+### 1. Install dependencies
 
-1. [TMDB'ye kaydolun](https://www.themoviedb.org/signup)
-2. Hesap ayarlarından API bölümüne gidin
-3. API Key (v3 auth) alın
-4. `lib/api.ts` dosyasındaki `TMDB_API_KEY` değişkenine yapıştırın
-
-### Kurulum Adımları
-
-1. Bağımlılıkları yükleyin:
 ```bash
 npm install
 ```
 
-2. API key'inizi ekleyin:
-`lib/api.ts` dosyasını açın ve şu satırı bulun:
-```typescript
-const TMDB_API_KEY = "YOUR_TMDB_API_KEY";
-```
-`YOUR_TMDB_API_KEY` yerine kendi API key'inizi yazın.
+### 2. Configure environment variables
 
-3. Geliştirme sunucusunu başlatın:
+Copy `.env.example` into `.env.local` and fill values:
+
+```bash
+cp .env.example .env.local
+```
+
+Required variables:
+
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `TMDB_API_KEY`
+
+Notes:
+
+- `TMDB_API_KEY` is server-only and used by `app/api/tmdb/route.ts`.
+- Do not commit `.env.local`.
+
+### 3. Run Supabase SQL migration
+
+Run `supabase_migration.sql` in the Supabase SQL editor.
+
+This migration includes:
+
+- lean `watchlist` schema
+- row-level security policies
+- avatar storage bucket and policies
+- watchlist size limit trigger
+
+### 4. Start development server
+
 ```bash
 npm run dev
 ```
 
-4. Tarayıcıda açın: [http://localhost:3000](http://localhost:3000)
+Open `http://localhost:3000`.
 
-## 🎮 Nasıl Kullanılır
+## Scripts
 
-- **Sağa Kaydır** veya ❤️ butonu = Filmi beğen
-- **Sola Kaydır** veya ✖️ butonu = Geç
-- **Yukarı Kaydır** veya ℹ️ butonu = Detayları gör
-- Uygulama beğenilerinizi öğrenir ve benzer türde filmler önerir
+- `npm run dev` - start development server
+- `npm run build` - production build
+- `npm run start` - run production server
+- `npm run lint` - lint the project
 
-## 🛠️ Teknolojiler
+## Public Repo Checklist
 
-- **Next.js 16** - React framework
-- **TypeScript** - Tip güvenli geliştirme
-- **Tailwind CSS v4.2** - Modern CSS framework
-- **Framer Motion** - Animasyonlar
-- **Lucide React** - İkonlar
-- **TMDB API** - Film veritabanı
+- Keep `.env.local` private
+- Rotate any key that was ever committed before
+- Restrict TMDB key by allowed usage where possible
+- Keep Supabase RLS policies enabled
 
-## 📁 Proje Yapısı
+## Project Structure
 
-```
-moviematch/
-├── app/
-│   ├── globals.css       # Global stiller
-│   ├── layout.tsx        # Root layout
-│   └── page.tsx          # Ana sayfa
-├── components/
-│   ├── MovieCard.tsx     # Kaydırılabilir film kartı
-│   └── MovieDetailsModal.tsx  # Film detay modal
-├── lib/
-│   ├── api.ts            # TMDB API entegrasyonu
-│   └── storage.ts        # LocalStorage yönetimi
-└── README.md
-```
-
-## 🔗 GitHub'a Bağlama
-
-### Yeni repo oluştur:
-
-```bash
-cd moviematch
-git remote add origin https://github.com/KULLANICI_ADINIZ/moviematch.git
-git branch -M main
-git push -u origin main
+```text
+app/
+	api/tmdb/route.ts
+	layout.tsx
+	page.tsx
+components/
+	AuthModal.tsx
+	MovieCard.tsx
+	MovieDetailsModal.tsx
+	ProfilePanel.tsx
+	WatchlistPanel.tsx
+lib/
+	api.ts
+	auth-context.tsx
+	storage.cloud.ts
+	storage.ts
+	supabase.ts
+supabase_migration.sql
 ```
 
-### GitHub CLI ile:
+## License
 
-```bash
-cd moviematch
-gh repo create moviematch --public --source=. --remote=origin --push
-```
-
-## 📝 Komutlar
-
-- `npm run dev` - Geliştirme sunucusu
-- `npm run build` - Production build
-- `npm start` - Production sunucu
-- `npm run lint` - ESLint
-
-## 🎨 Özelleştirme
-
-- `app/globals.css` - Renk şemasını değiştir
-- `lib/api.ts` - Film türlerini ve sorgularını düzenle
-- `components/MovieCard.tsx` - Kart tasarımını değiştir
-
-## 📄 Lisans
-
-MIT License
-
-## 🤝 Katkıda Bulunma
-
-Pull request'ler memnuniyetle karşılanır!
-
----
-
-TMDB API ile geliştirildi ❤️
+MIT. See `LICENSE`.
