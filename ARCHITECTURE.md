@@ -3,7 +3,7 @@
 **Project Name:** Movier
 **Course:** SWE332 Software Architecture Project Part 2
 **Date:** 07.04.2026
-**Team Members:** 
+**Team Members:**
 - Mehmet Ali Öztürk
 - Deniz Eren Gençtürk
 - Ali Yekta Dalkılıç
