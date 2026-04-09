@@ -1,6 +1,9 @@
 # Movier
 
 Swipe-based movie discovery app built with Next.js and TMDB. The project supports anonymous usage via local storage and authenticated usage via Supabase cloud sync.
+ It solves the problem of "decision fatigue" by allowing users to quickly discover films through an intuitive swipe interface. 
+## Architecture Link
+🔗 **[Click here to view the Software Architecture Documentation ](./ARCHITECTURE.md)**
 
 ## Features
 
@@ -83,32 +86,40 @@ Open `http://localhost:3000`.
 
 ## Project Structure
 
-```text
-app/
-	api/tmdb/route.ts
-	layout.tsx
-	page.tsx
-components/
-	AuthModal.tsx
-	MovieCard.tsx
-	MovieDetailsModal.tsx
-	ProfilePanel.tsx
-	WatchlistPanel.tsx
-lib/
-	api.ts
-	auth-context.tsx
-	storage.cloud.ts
-	storage.ts
-	supabase.ts
-supabase_migration.sql
+```text## Project Structure
+📦 movier
+ ┣ 📂 app
+ ┃ ┣ 📂 api/tmdb
+ ┃ ┃ ┗ 📜 route.ts
+ ┃ ┣ 📜 globals.css
+ ┃ ┣ 📜 layout.tsx
+ ┃ ┗ 📜 page.tsx
+ ┣ 📂 components
+ ┃ ┣ 📜 AuthModal.tsx
+ ┃ ┣ 📜 EmptyState.tsx
+ ┃ ┣ 📜 FilterBar.tsx
+ ┃ ┣ 📜 MovieCard.tsx
+ ┃ ┣ 📜 MovieDetailsModal.tsx
+ ┃ ┣ 📜 ProfilePanel.tsx
+ ┃ ┣ 📜 TmdbImage.tsx
+ ┃ ┗ 📜 WatchlistPanel.tsx
+ ┣ 📂 lib
+ ┃ ┣ 📜 api.ts
+ ┃ ┣ 📜 auth-context.tsx
+ ┃ ┣ 📜 storage.cloud.ts
+ ┃ ┣ 📜 storage.local.ts
+ ┃ ┣ 📜 storage.ts
+ ┃ ┗ 📜 supabase.ts
+ ┣ 📜 ARCHITECTURE.md
+ ┣ 📜 package.json
+ ┣ 📜 README.md
+ ┗ 📜 supabase_migration.sql
 ```
 
 ## Contributors
-
-- Mehmet Ali Ozturk
-- Deniz Eren Gencturk
-- Ali Yekta Dalkilic
-
+* **Mehmet Ali Öztürk** - ID: [230513329] - GitHub: [mehmetali-ozturk]
+* **Deniz Eren Gençtürk** - ID: [230513320] - GitHub: [erengc]
+* **Ali Yekta Dalkılıç** - ID: [230513306] - GitHub: [Flandsako55]
 ## License
 
 MIT. See `LICENSE`.
