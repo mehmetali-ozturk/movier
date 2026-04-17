@@ -21,7 +21,7 @@ export async function POST() {
       return NextResponse.json({ error: "You must like a movie for recommendations" }, { status: 400 });
     }
 
-    // 2. Ortalama vektörü hesaplıyoruz
+    // 2. avgVector calculations
     const avgVector = new Array(384).fill(0);
     likedMovies.forEach((m: any) => {
       if (m.embedding && Array.isArray(m.embedding)) {
@@ -31,14 +31,14 @@ export async function POST() {
       }
     });
 
-    // 3. RPC fonksiyonunu çağırıyoruz (İŞTE BURADA matchError TANIMLANIYOR)
+    //
     const { data: recommendations, error: matchError } = await (supabase as any).rpc('match_movies', {
       query_embedding: avgVector,
       match_threshold: 0.3,
       match_count: 10
     });
 
-    // 4. Hata kontrolü (Yukarıda tanımlandığı için artık kızmayacak)
+
     if (matchError) throw matchError;
 
     return NextResponse.json({ recommendations });

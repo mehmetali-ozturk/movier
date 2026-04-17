@@ -70,9 +70,10 @@ export async function cloudSetLanguage(userId: string, language: string): Promis
 }
 
 /**
- * Migrate localStorage watchlist to Supabase on first login.
- * Only persists movie_ids — details are fetched from TMDB on demand.
- */
+     Migrate localStorage watchlist to Supabase on first login.
+    Only persists movie_ids — details are fetched from TMDB on demand.
+    works perfect :)
+   */
 export async function migrateLocalToCloud(userId: string, localMovies: Movie[]): Promise<void> {
   if (localMovies.length === 0) return;
   const supabase = createClient() as any;
@@ -80,11 +81,7 @@ export async function migrateLocalToCloud(userId: string, localMovies: Movie[]):
   await supabase.from("watchlist").upsert(rows, { onConflict: "user_id,movie_id" });
 }
 
-/**
- * Upload a profile picture to Supabase Storage (avatars bucket).
- * Max 2MB, JPEG/PNG/WebP only — validated on client before calling.
- * Returns the public URL or null on failure.
- */
+
 export async function cloudUploadAvatar(userId: string, file: File): Promise<string | null> {
   const supabase = createClient() as any;
   const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
@@ -100,7 +97,7 @@ export async function cloudUploadAvatar(userId: string, file: File): Promise<str
   // Cache-bust so the browser picks up the new image immediately
   const url = `${data.publicUrl}?t=${Date.now()}`;
 
-  // Persist URL in user_preferences
+
   await supabase
     .from("user_preferences")
     .upsert(
@@ -111,10 +108,7 @@ export async function cloudUploadAvatar(userId: string, file: File): Promise<str
   return url;
 }
 
-/**
- * Fetch the stored avatar URL for an email/password user.
- * Returns null if not set (Google users use their metadata URL instead).
- */
+
 export async function cloudGetAvatarUrl(userId: string): Promise<string | null> {
   const supabase = createClient() as any;
   const { data } = await supabase

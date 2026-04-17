@@ -10,12 +10,12 @@ const GENRE_MAP: { [key: number]: string } = {
 };
 
 export async function GET() {
-  // TypeScript'i atlatmak için 'as any' kullanıyoruz
+  // TypeScript's strict type error why as any used
   const supabase = createClient()! as any;
   const TMDB_KEY = process.env.TMDB_API_KEY;
 
   try {
-    // İsteğe bağlı temizlik: Veritabanı çok şişmesin diye önce eski seed filmlerini siliyoruz
+
     await supabase.from('movies').delete().eq('is_liked', false);
 
     for (let page = 1; page <= 10; page++) { // Fetch 10 pages for 200 movies
@@ -37,12 +37,12 @@ export async function GET() {
           poster_path: movie.poster_path, // Afişler için
           vote_average: movie.vote_average  // Puanlar için
         }, {
-          onConflict: 'id' // Çakışma olursa üzerine yaz
+          onConflict: 'id' // Override over onConflict
         });
       }
     }
 
-    // İşlem bitince tarayıcıya bilgi veriyoruz
+
     return NextResponse.json({ success: true, message: "Seed işlemi başarıyla tamamlandı!" });
 
   } catch (error: any) {

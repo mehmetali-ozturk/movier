@@ -38,8 +38,7 @@ export default function MovieCard({ movie, nextMovie, onSwipe, language }: Movie
     if (info.offset.y < -threshold && Math.abs(info.offset.x) < threshold) {
       onSwipe("up");
     } else if (info.offset.x > threshold) {
-      // GEREKSİZ FETCH KALDIRILDI!
-      // Sadece onSwipe çağırıyoruz, veri işleme mantığı page.tsx'te kalıyor.
+
       onSwipe("right");
     } else if (info.offset.x < -threshold) {
       onSwipe("left");

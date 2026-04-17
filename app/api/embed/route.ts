@@ -6,7 +6,7 @@ export async function POST(request: Request) {
   try {
     const { movieId } = await request.json();
 
-    // 1. Supabase istemcisini BURADA bir kez tanımlıyoruz
+
     const supabase = createClient() as any ;
 
     const tmdbRes = await fetch(`https://api.themoviedb.org/3/movie/${movieId}?api_key=${process.env.TMDB_API_KEY}`);
@@ -16,7 +16,7 @@ export async function POST(request: Request) {
     const textToEmbed = `Title: ${movie.title}. Genres: ${genres}. Description: ${movie.overview}`;
     const embedding = await generateMovieEmbedding(textToEmbed);
 
-    // 2. Yukarıda tanımladığımız 'supabase' değişkenini burada kullanıyoruz
+    // Supabase used again
     const { error } = await supabase
       .from('movies')
       .upsert({
@@ -35,7 +35,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    console.error("Embed Hatası:", error.message);
+    console.error("Embed Error:", error.message);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

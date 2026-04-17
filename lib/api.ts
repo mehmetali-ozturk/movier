@@ -91,7 +91,7 @@ export async function fetchMovies(
   const randomPage = (max: number = 20) => String(Math.floor(Math.random() * max) + 1);
   
   try {
-    // Popüler filmler (seçilen dilde)
+
     const popularResponse = await tmdb("/movie/popular", {
       language,
       page: randomPage(),
@@ -103,7 +103,7 @@ export async function fetchMovies(
       console.log(`Popular movies (${language}): ${data.results.length}`);
     }
     
-    // Top rated filmler (seçilen dilde)
+
     const topRatedResponse = await tmdb("/movie/top_rated", {
       language,
       page: randomPage(),
@@ -115,7 +115,7 @@ export async function fetchMovies(
       console.log(`Top rated movies (${language}): ${data.results.length}`);
     }
     
-    // Beğenilen türlerden filmler
+    // Liked genres
     if (usePreferredGenre && preferredGenres.length > 0) {
       const genreId = preferredGenres[Math.floor(Math.random() * preferredGenres.length)];
       const genreResponse = await tmdb("/discover/movie", {
@@ -132,14 +132,14 @@ export async function fetchMovies(
       }
     }
     
-    // Tekrar edenleri kaldır
+    // Remove duplicate films
     const uniqueMovies = Array.from(
       new Map(allMovies.map(movie => [movie.id, movie])).values()
     ).filter(movie => !excludedSet.has(movie.id));
     
     console.log(`Total unique movies: ${uniqueMovies.length}`);
     
-    // Karıştır ve döndür
+    // Shuffle
     return uniqueMovies
       .sort(() => Math.random() - 0.5)
       .slice(0, 40);
