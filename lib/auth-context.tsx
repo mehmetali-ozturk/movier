@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState, useMemo } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase";
 
@@ -19,7 +19,9 @@ const AuthContext = createContext<AuthContextValue>({
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const supabase = createClient();
+  // Supabase istemcisini sabitle
+  const supabase = useMemo(() => createClient(), []);
+
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -38,14 +40,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [supabase]);
 
   const signOut = async () => {
     await supabase.auth.signOut();
   };
 
+  // Context değerini memoize et; sonsuz render döngüsünü kırar
+  const contextValue = useMemo(() => ({
+    user,
+    session,
+    loading,
+    signOut
+  }), [user, session, loading]);
+
   return (
-    <AuthContext.Provider value={{ user, session, loading, signOut }}>
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   );

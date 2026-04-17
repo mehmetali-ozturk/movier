@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import MovieCard from "@/components/MovieCard";
 import MovieDetailsModal from "@/components/MovieDetailsModal";
 import WatchlistPanel from "@/components/WatchlistPanel";
-import { Heart, X, Info, Languages, List, Film, SlidersHorizontal, LogIn } from "lucide-react";
+import { Heart, X, Info, Languages, List, Film, SlidersHorizontal, LogIn, Sparkles } from "lucide-react";
 import { Movie, fetchMovies, Language, FilterOptions } from "@/lib/api";
 import { getWatchlist, addToWatchlist, removeFromWatchlist, clearWatchlist, getLikedGenres, getLanguagePreference, setLanguagePreference } from "@/lib/storage";
 import { cloudGetWatchlist, cloudAddToWatchlist, cloudRemoveFromWatchlist, cloudClearWatchlist, cloudGetLanguage, cloudSetLanguage, migrateLocalToCloud } from "@/lib/storage.cloud";
@@ -32,9 +32,10 @@ export default function Home() {
   const [apiKeyMissing, setApiKeyMissing] = useState(false);
   const [noResults, setNoResults] = useState(false);
   const [hasMounted, setHasMounted] = useState(false);
+
+  const [isAiMode, setIsAiMode] = useState(false);
   const seenMovieIdsRef = useRef<Set<number>>(new Set());
 
-  // Initial mount: load language and movies (auth-independent)
   useEffect(() => {
     setHasMounted(true);
     const savedLanguage = getLanguagePreference();
@@ -42,16 +43,13 @@ export default function Home() {
     loadMovies(savedLanguage);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Load watchlist whenever auth state resolves or changes
   useEffect(() => {
     if (authLoading) return;
     if (user) {
-      // Migrate any local data, then load from cloud
       const localMovies = getWatchlist();
       migrateLocalToCloud(user.id, localMovies).then(() =>
         cloudGetWatchlist(user.id).then(setWatchlist)
       );
-      // Sync language pref from cloud (cloud wins if set)
       cloudGetLanguage(user.id).then(lang => {
         if (lang) {
           setLanguage(lang as Language);
@@ -78,12 +76,15 @@ export default function Home() {
     mode: "replace" | "append" = "replace"
   ) => {
     setLoading(true);
+    setIsAiMode(false);
     setNoResults(false);
+
     const genres = getLikedGenres();
     const currentLang = lang || language;
     const activeFilters = newFilters !== undefined ? newFilters : filters;
     const queuedIds = movies.map(m => m.id);
     const excludedIds = Array.from(new Set([...seenMovieIdsRef.current, ...queuedIds]));
+
     const newMovies = await fetchMovies(genres, currentLang, activeFilters, excludedIds);
 
     const hasActiveFilters = Object.values(activeFilters).some(v =>
@@ -111,6 +112,43 @@ export default function Home() {
     setLoading(false);
   };
 
+  const loadAiRecommendations = async () => {
+    if (!user) {
+      setShowAuthModal(true);
+      return;
+    }
+
+    setLoading(true);
+    setIsAiMode(true);
+    setNoResults(false);
+
+    try {
+      const res = await fetch('/api/recommend', { method: 'POST' });
+      const data = await res.json();
+
+      if (data.recommendations && data.recommendations.length > 0) {
+        const formattedMovies = data.recommendations.map((rec: any) => ({
+          id: rec.id,
+          title: rec.title,
+          overview: rec.overview,
+          poster_path: rec.poster_path,
+          backdrop_path: rec.poster_path,
+          vote_average: rec.vote_average,
+          release_date: ""
+        }));
+        setMovies(formattedMovies);
+        setCurrentIndex(0);
+      } else {
+        setNoResults(true);
+      }
+    } catch (err) {
+      console.error("AI Hatası:", err);
+      setNoResults(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleApplyFilters = (newFilters: FilterOptions) => {
     seenMovieIdsRef.current.clear();
     setFilters(newFilters);
@@ -126,27 +164,37 @@ export default function Home() {
     }
 
     const movie = movies[currentIndex];
+    seenMovieIdsRef.current.add(movie.id);
+
+    // Kartı hemen ilerlet (UI Takılmaz)
+    setCurrentIndex(prev => prev + 1);
 
     if (direction === "right") {
-      // Optimistic UI: update badge immediately
-      setWatchlist(prev => (prev.some(m => m.id === movie.id) ? prev : [movie, ...prev]));
-      // Persist in background — don't block the card animation
+      // OPTIMISTIC UPDATE: Badge ve Listeyi anında güncelle
+      setWatchlist(prev => {
+        if (prev.some(m => m.id === movie.id)) return prev;
+        return [movie, ...prev];
+      });
+
+      // Arka planda Vektör kaydı
+      fetch('/api/embed', {
+        method: 'POST',
+        body: JSON.stringify({ movieId: movie.id }),
+        headers: { 'Content-Type': 'application/json' }
+      }).catch(err => console.error("Vektör hatası:", err));
+
+      // Arka planda Watchlist kaydı
       if (user) {
-        cloudAddToWatchlist(movie.id, user.id).then(() =>
-          cloudGetWatchlist(user.id).then(setWatchlist)
-        );
+        cloudAddToWatchlist(movie.id, user.id)
+          .then(() => cloudGetWatchlist(user.id))
+          .then(setWatchlist) // Sunucudaki son haliyle senkronize et
+          .catch(err => console.error("Cloud hatası:", err));
       } else {
         addToWatchlist(movie);
       }
     }
 
-    seenMovieIdsRef.current.add(movie.id);
-
-    // Advance card immediately regardless of direction
-    const nextIndex = currentIndex + 1;
-    setCurrentIndex(nextIndex);
-
-    if (nextIndex >= movies.length - 3) {
+    if (currentIndex >= movies.length - 3 && !isAiMode) {
       loadMovies(undefined, undefined, "append");
     }
   };
@@ -230,7 +278,6 @@ export default function Home() {
   return (
     <main className="min-h-screen flex flex-col items-center justify-center p-4">
       <div className="w-full max-w-md">
-        {/* Header */}
         <div className="text-center mb-6">
           <div className="flex items-center justify-center gap-3 mb-3">
             <h1 className="text-5xl font-bold text-white tracking-tight flex items-center gap-3">
@@ -238,7 +285,14 @@ export default function Home() {
               <span className="text-red-600">Movier</span>
             </h1>
             <div className="flex gap-2">
-              {/* Filter button */}
+              <button
+                onClick={loadAiRecommendations}
+                className={`p-2 rounded-lg border transition ${isAiMode ? "bg-purple-600 border-purple-500 text-white" : "bg-purple-600/20 hover:bg-purple-600/30 border-purple-600/50"}`}
+                title={language === "en" ? "AI Recommendations" : "AI Önerisi"}
+              >
+                <Sparkles className="text-purple-300" size={20} />
+              </button>
+
               <button onClick={() => setShowFilterBar(prev => !prev)}
                 className={`relative p-2 rounded-lg border transition ${Object.values(filters).some(v => (Array.isArray(v) ? v.length > 0 : v !== undefined))
                     ? "bg-red-600 border-red-500 text-white"
@@ -253,7 +307,7 @@ export default function Home() {
                   </span>
                 )}
               </button>
-              {/* Watchlist button */}
+
               <button onClick={() => setShowWatchlistPanel(true)}
                 className="relative p-2 rounded-lg bg-red-600/20 hover:bg-red-600/30 border border-red-600/50 transition"
                 title={language === "en" ? "My Watchlist" : "İzleme Listem"}
@@ -265,7 +319,7 @@ export default function Home() {
                   </span>
                 )}
               </button>
-              {/* Language button */}
+
               <div className="relative">
                 <button
                   onClick={() => setShowLanguageMenu(!showLanguageMenu)}
@@ -289,7 +343,7 @@ export default function Home() {
                   </div>
                 )}
               </div>
-              {/* Auth button */}
+
               {!authLoading && (
                 user ? (
                   <button
@@ -298,7 +352,6 @@ export default function Home() {
                     title={user.email ?? "Profile"}
                   >
                     {user.user_metadata?.avatar_url ? (
-                      // eslint-disable-next-line @next/next/no-img-element
                       <img
                         src={user.user_metadata.avatar_url as string}
                         alt="avatar"
@@ -332,7 +385,6 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Filter Modal */}
         <FilterBar
           isOpen={showFilterBar}
           filters={filters}
@@ -341,13 +393,12 @@ export default function Home() {
           onClose={() => setShowFilterBar(false)}
         />
 
-        {/* Movie Card Area */}
         <div className="relative h-[600px] flex items-center justify-center mb-6">
           {loading ? (
             <div className="flex flex-col items-center gap-3">
               <div className="w-12 h-12 border-4 border-red-600/30 border-t-red-600 rounded-full animate-spin" />
               <p className="text-gray-400 text-sm">
-                {language === "en" ? "Loading movies..." : "Filmler yükleniyor..."}
+                {isAiMode ? (language === "en" ? "AI is analyzing your taste..." : "AI zevkinizi analiz ediyor...") : (language === "en" ? "Loading movies..." : "Filmler yükleniyor...")}
               </p>
             </div>
           ) : noResults ? (
@@ -379,7 +430,6 @@ export default function Home() {
           )}
         </div>
 
-        {/* Action Buttons  */}
         <div className="flex justify-center gap-4 mb-4">
           <button
             onClick={() => handleSwipe("left")}
