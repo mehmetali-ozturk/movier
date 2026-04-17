@@ -1,3 +1,6 @@
+import { createClient } from "@/lib/supabase";
+
+
 export interface Movie {
   id: number;
   title: string;
@@ -226,14 +229,14 @@ export async function fetchMovieDetails(movieId: number, language: Language = "e
   if (movieDetailsCache.has(cacheKey)) return movieDetailsCache.get(cacheKey)!;
 
   try {
-    // Önce seçilen dilde dene
+
     let response = await tmdb(`/movie/${movieId}`, { language });
     
     if (!response.ok) return null;
     
     let data = await response.json();
     
-    // Eğer açıklama yoksa İngilizce'den al (fallback)
+    // no explanation = use english language as default (fallback)
     if (!data.overview && language !== "en") {
       console.log(`No overview in ${language}, falling back to English`);
       const fallbackResponse = await tmdb(`/movie/${movieId}`, { language: "en" });
@@ -285,6 +288,35 @@ export async function fetchMovieTrailer(movieId: number): Promise<string | null>
     console.error("Error fetching trailer:", error);
     return null;
   }
+}
+
+// Vector Function
+export async function fetchVectorRecommendations(
+  userVector: number[],
+  language: Language
+): Promise<Movie[]> {
+  const supabase = createClient(); // Supabase client runs
+
+  // Fetching Supabase ıd's
+  const { data: matchedMovies, error } = await supabase.rpc('match_movies', {
+    query_embedding: userVector,
+    match_threshold: 0.7, // max %70 similarity
+    match_count: 10
+  });
+
+  if (error || !matchedMovies) {
+    console.error("Vector do not match:", error);
+    return [];
+  }
+
+ //  fetch details of matched ID in users preffered language
+  const recommendedMovies = await Promise.all(
+    matchedMovies.map(async (m: any) => {
+      return await fetchMovieDetails(m.id, language);
+    })
+  );
+
+  return recommendedMovies.filter(Boolean) as Movie[];
 }
 
 export { GENRE_MAP };

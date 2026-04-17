@@ -36,12 +36,20 @@ export default function MovieCard({ movie, nextMovie, onSwipe, language }: Movie
   const nopeOverlayOpacity = useTransform(x, [-120, 0], [0.75, 0]);
   const upOverlayOpacity = useTransform(y, [-120, 0], [0.75, 0]);
 
-  const handleDragEnd = (_: any, info: any) => {
+const handleDragEnd = (_: any, info: any) => {
     const threshold = 100;
     if (info.offset.y < -threshold && Math.abs(info.offset.x) < threshold) {
       onSwipe("up");
     } else if (info.offset.x > threshold) {
+
       onSwipe("right");
+      console.log(" (sent movie )ID:", movie.id);
+      fetch('/api/embed', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ movieId: movie.id })
+      }).catch(err => console.error("Vector API error:", err));
+
     } else if (info.offset.x < -threshold) {
       onSwipe("left");
     }
@@ -50,7 +58,7 @@ export default function MovieCard({ movie, nextMovie, onSwipe, language }: Movie
   return (
     <div className="relative w-full max-w-sm" style={{ height: "600px" }}>
 
-      {/* Arka kart - silüet */}
+      {/* Background Card - silüet */}
       {nextMovie && (
         <motion.div
           className="absolute inset-0 rounded-2xl overflow-hidden shadow-xl"
@@ -94,7 +102,7 @@ export default function MovieCard({ movie, nextMovie, onSwipe, language }: Movie
       >
         <div className="relative h-full rounded-2xl overflow-hidden shadow-2xl">
 
-          {/* Yeşil renk overlay (sağa) */}
+          {/* Green  overlay (to right) */}
           <motion.div
             className="absolute inset-0 z-10 rounded-2xl pointer-events-none"
             style={{
@@ -103,7 +111,7 @@ export default function MovieCard({ movie, nextMovie, onSwipe, language }: Movie
             }}
           />
 
-          {/* Kırmızı renk overlay (sola) */}
+          {/* REd  overlay (to left) */}
           <motion.div
             className="absolute inset-0 z-10 rounded-2xl pointer-events-none"
             style={{
@@ -112,7 +120,7 @@ export default function MovieCard({ movie, nextMovie, onSwipe, language }: Movie
             }}
           />
 
-          {/* Mavi renk overlay (yukarı) */}
+          {/* Blue  overlay (to up) */}
           <motion.div
             className="absolute inset-0 z-10 rounded-2xl pointer-events-none"
             style={{
