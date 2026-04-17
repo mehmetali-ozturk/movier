@@ -10,10 +10,14 @@ const GENRE_MAP: { [key: number]: string } = {
 };
 
 export async function GET() {
-  const supabase = createClient();
+  // TypeScript'i atlatmak için 'as any' kullanıyoruz
+  const supabase = createClient()! as any;
   const TMDB_KEY = process.env.TMDB_API_KEY;
 
   try {
+    // İsteğe bağlı temizlik: Veritabanı çok şişmesin diye önce eski seed filmlerini siliyoruz
+    await supabase.from('movies').delete().eq('is_liked', false);
+
     for (let page = 1; page <= 10; page++) { // Fetch 10 pages for 200 movies
       const res = await fetch(`https://api.themoviedb.org/3/movie/popular?api_key=${TMDB_KEY}&page=${page}`);
       const data = await res.json();
@@ -25,13 +29,24 @@ export async function GET() {
         const embedding = await generateMovieEmbedding(textToEmbed);
 
         await supabase.from('movies').upsert({
-          id: movie.id, title: movie.title, overview: movie.overview,
-          embedding: embedding, is_liked: false // Save as a candidate movie
+          id: movie.id,
+          title: movie.title,
+          overview: movie.overview || "",
+          embedding: embedding,
+          is_liked: false,
+          poster_path: movie.poster_path, // Afişler için
+          vote_average: movie.vote_average  // Puanlar için
+        }, {
+          onConflict: 'id' // Çakışma olursa üzerine yaz
         });
       }
     }
 
+    // İşlem bitince tarayıcıya bilgi veriyoruz
+    return NextResponse.json({ success: true, message: "Seed işlemi başarıyla tamamlandı!" });
+
   } catch (error: any) {
+    console.error("Seed Hatası:", error.message);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

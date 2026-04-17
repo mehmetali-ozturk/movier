@@ -118,7 +118,7 @@ export default function WatchlistPanel({ isOpen, onClose, watchlist, onUpdate, o
             className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50"
             onClick={onClose}
           />
-          
+
           {/* Panel */}
           <motion.div
             initial={{ x: "100%" }}
@@ -141,7 +141,7 @@ export default function WatchlistPanel({ isOpen, onClose, watchlist, onUpdate, o
                   <X className="text-white" size={24} />
                 </button>
               </div>
-              
+
               {/* Clear All Button */}
               {watchlist.length > 0 && (
                 <>
@@ -289,13 +289,13 @@ export default function WatchlistPanel({ isOpen, onClose, watchlist, onUpdate, o
                             iconSize={28}
                           />
                         )}
-                        
+
                         {/* Info */}
                         <div className="flex-1 min-w-0">
                           <h3 className="text-white font-bold text-lg line-clamp-2 mb-1">
                             {movie.title}
                           </h3>
-                          
+
                           <div className="flex items-center gap-2 mb-2">
                             {movie.voteAverage && (
                               <div className="flex items-center gap-1">
@@ -312,7 +312,7 @@ export default function WatchlistPanel({ isOpen, onClose, watchlist, onUpdate, o
                               </div>
                             )}
                           </div>
-                          
+
                           {movie.genres && movie.genres.length > 0 && (
                             <div className="flex flex-wrap gap-1 mb-3">
                               {movie.genres.slice(0, 2).map((genre, idx) => (
@@ -325,7 +325,7 @@ export default function WatchlistPanel({ isOpen, onClose, watchlist, onUpdate, o
                               ))}
                             </div>
                           )}
-                          
+
                           {/* Actions */}
                           <div className="flex gap-2">
                             <button

@@ -1,25 +1,30 @@
-import { createClient as createSupabaseClient } from '@supabase/supabase-js'
+import { createClient as createSupabaseClient, SupabaseClient } from '@supabase/supabase-js'
 
-// İstemciyi (client) bir kez oluşturup saklamak için değişken tanımlıyoruz
-let supabase: ReturnType<typeof createSupabaseClient> | null = null;
+export type Database = {
+  public: {
+    Tables: {
+      movies: {
+        Row: { id: number; title: string; overview: string | null; embedding: number[] | null; is_liked: boolean; poster_path?: string | null; vote_average?: number | null }
+        Insert: { id: number; title: string; overview?: string | null; embedding?: number[] | null; is_liked?: boolean; poster_path?: string | null; vote_average?: number | null }
+        Update: { id?: number; title?: string; overview?: string | null; embedding?: number[] | null; is_liked?: boolean; poster_path?: string | null; vote_average?: number | null }
+      }
+    }
+  }
+}
+
+// 'ReturnType' yerine doğrudan 'SupabaseClient<Database>' kullanıyoruz
+let supabase: SupabaseClient<Database> | null = null;
 
 export function createClient() {
-  // Eğer daha önce bir istemci oluşturulmuşsa, yenisini yaratma; mevcut olanı döndür
   if (supabase) return supabase;
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 
-  if (!url || !key) {
-    console.error("Supabase URL veya Key eksik! .env.local dosyanızı kontrol edin.");
-  }
-
-  // Yeni istemciyi oluştur ve auth ayarlarını yapılandır
-  supabase = createSupabaseClient(url, key, {
+  supabase = createSupabaseClient<Database>(url, key, {
     auth: {
-      persistSession: true, // Oturumu tarayıcıda sakla
-      autoRefreshToken: true, // Token süresi dolunca otomatik yenile
-      detectSessionInUrl: true // URL'deki (e-posta onayı gibi) oturumu algıla
+      persistSession: true,
+      autoRefreshToken: true
     }
   });
 

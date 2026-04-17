@@ -5,7 +5,7 @@ import MovieCard from "@/components/MovieCard";
 import MovieDetailsModal from "@/components/MovieDetailsModal";
 import WatchlistPanel from "@/components/WatchlistPanel";
 import { Heart, X, Info, Languages, List, Film, SlidersHorizontal, LogIn, Sparkles } from "lucide-react";
-import { Movie, fetchMovies, Language, FilterOptions } from "@/lib/api";
+import { Movie, fetchMovies, Language, FilterOptions,getImageUrl,fetchMovieDetails} from "@/lib/api";
 import { getWatchlist, addToWatchlist, removeFromWatchlist, clearWatchlist, getLikedGenres, getLanguagePreference, setLanguagePreference } from "@/lib/storage";
 import { cloudGetWatchlist, cloudAddToWatchlist, cloudRemoveFromWatchlist, cloudClearWatchlist, cloudGetLanguage, cloudSetLanguage, migrateLocalToCloud } from "@/lib/storage.cloud";
 import { useAuth } from "@/lib/auth-context";
@@ -112,42 +112,46 @@ export default function Home() {
     setLoading(false);
   };
 
-  const loadAiRecommendations = async () => {
-    if (!user) {
-      setShowAuthModal(true);
-      return;
-    }
+ const loadAiRecommendations = async () => {
+     if (!user) {
+       setShowAuthModal(true);
+       return;
+     }
 
-    setLoading(true);
-    setIsAiMode(true);
-    setNoResults(false);
+     if (isAiMode) {
+       setIsAiMode(false);
+       loadMovies(undefined, filters, "replace");
+       return;
+     }
 
-    try {
-      const res = await fetch('/api/recommend', { method: 'POST' });
-      const data = await res.json();
+     setLoading(true);
+     setIsAiMode(true);
+     setNoResults(false);
 
-      if (data.recommendations && data.recommendations.length > 0) {
-        const formattedMovies = data.recommendations.map((rec: any) => ({
-          id: rec.id,
-          title: rec.title,
-          overview: rec.overview,
-          poster_path: rec.poster_path,
-          backdrop_path: rec.poster_path,
-          vote_average: rec.vote_average,
-          release_date: ""
-        }));
-        setMovies(formattedMovies);
-        setCurrentIndex(0);
-      } else {
-        setNoResults(true);
-      }
-    } catch (err) {
-      console.error("AI Hatası:", err);
-      setNoResults(true);
-    } finally {
-      setLoading(false);
-    }
-  };
+     try {
+       const res = await fetch('/api/recommend', { method: 'POST' });
+       const data = await res.json();
+
+       if (data.recommendations && data.recommendations.length > 0) {
+         // DÜZELTME: Sadece ID'yi alıp, filmin tüm afiş, yıl, tür detaylarını TMDB'den canlı çekiyoruz!
+         const fullMovies = await Promise.all(
+           data.recommendations.map((rec: any) => fetchMovieDetails(rec.id, language))
+         );
+
+         // Boş dönenleri filtrele (filter(Boolean)) ve listeye aktar
+         setMovies(fullMovies.filter(Boolean) as Movie[]);
+         setCurrentIndex(0);
+       } else {
+         setNoResults(true);
+       }
+     } catch (err) {
+       console.error("AI Hatası:", err);
+       setNoResults(true);
+     } finally {
+       setLoading(false);
+     }
+   };
+
 
   const handleApplyFilters = (newFilters: FilterOptions) => {
     seenMovieIdsRef.current.clear();

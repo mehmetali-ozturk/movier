@@ -298,9 +298,9 @@ export async function fetchVectorRecommendations(
   const supabase = createClient(); // Supabase client runs
 
   // Fetching Supabase ıd's
-  const { data: matchedMovies, error } = await supabase.rpc('match_movies', {
+  const { data: matchedMovies, error } = await (supabase as any).rpc('match_movies', {
     query_embedding: userVector,
-    match_threshold: 0.7, // max %70 similarity
+    match_threshold: 0.3, // max %70 similarity
     match_count: 10
   });
 
