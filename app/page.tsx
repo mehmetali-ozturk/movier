@@ -1,5 +1,6 @@
 "use client";
-
+// app/page.tsx dosyasının en üstüne ekle:
+import { createClient } from "@/lib/supabase";
 import { useState, useEffect, useRef } from "react";
 import MovieCard from "@/components/MovieCard";
 import MovieDetailsModal from "@/components/MovieDetailsModal";
@@ -38,6 +39,18 @@ export default function Home() {
 
   useEffect(() => {
     setHasMounted(true);
+    const resetLikesOnEntry = async () => {
+        const supabase = createClient() as any; // Type bypass
+        const { error } = await supabase
+          .from("movies")
+          .update({ is_liked: false })
+          .eq("is_liked", true); // Sadece true olanları false yap
+
+        if (error) console.error("Sıfırlama hatası:", error.message);
+      };
+
+        resetLikesOnEntry();
+
     const savedLanguage = getLanguagePreference();
     setLanguage(savedLanguage);
     loadMovies(savedLanguage);
