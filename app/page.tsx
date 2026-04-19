@@ -5,7 +5,8 @@ import { useState, useEffect, useRef } from "react";
 import MovieCard from "@/components/MovieCard";
 import MovieDetailsModal from "@/components/MovieDetailsModal";
 import WatchlistPanel from "@/components/WatchlistPanel";
-import { Heart, X, Info, Languages, List, Film, SlidersHorizontal, LogIn, Sparkles } from "lucide-react";
+import Image from "next/image";
+import { Heart, X, Info, Languages, List, SlidersHorizontal, LogIn, Sparkles } from "lucide-react";
 import { Movie, fetchMovies, Language, FilterOptions,getImageUrl,fetchMovieDetails} from "@/lib/api";
 import { getWatchlist, addToWatchlist, removeFromWatchlist, clearWatchlist, getLikedGenres, getLanguagePreference, setLanguagePreference } from "@/lib/storage";
 import { cloudGetWatchlist, cloudAddToWatchlist, cloudRemoveFromWatchlist, cloudClearWatchlist, cloudGetLanguage, cloudSetLanguage, migrateLocalToCloud } from "@/lib/storage.cloud";
@@ -261,7 +262,7 @@ export default function Home() {
       <main className="min-h-screen flex items-center justify-center p-4">
         <div className="max-w-2xl bg-white/10 backdrop-blur-lg rounded-3xl p-8 border border-white/20">
           <div className="flex items-center gap-3 mb-4">
-            <Film className="text-red-600" size={40} />
+            <Image src="/logo.png" alt="Movier" width={40} height={40} />
             <h1 className="text-4xl font-bold text-white">Movier</h1>
           </div>
           <h2 className="text-2xl font-semibold text-red-300 mb-4">TMDB API Key Gerekli</h2>
@@ -298,7 +299,7 @@ export default function Home() {
         <div className="text-center mb-6">
           <div className="flex items-center justify-center gap-3 mb-3">
             <h1 className="text-5xl font-bold text-white tracking-tight flex items-center gap-3">
-              <Film className="text-red-600" size={48} />
+              <Image src="/logo.png" alt="Movier" width={48} height={48} />
               <span className="text-red-600">Movier</span>
             </h1>
             <div className="flex gap-2">
