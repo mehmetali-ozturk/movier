@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, useMemo } from "react";
+import { createContext, useContext, useEffect, useState, useMemo, useCallback } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase";
 
@@ -42,9 +42,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe();
   }, [supabase]);
 
-  const signOut = async () => {
+  const signOut = useCallback(async () => {
     await supabase.auth.signOut();
-  };
+  }, [supabase]);
 
   // Context değerini memoize et; sonsuz render döngüsünü kırar
   const contextValue = useMemo(() => ({
@@ -52,7 +52,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     session,
     loading,
     signOut
-  }), [user, session, loading]);
+  }), [user, session, loading, signOut]);
 
   return (
     <AuthContext.Provider value={contextValue}>

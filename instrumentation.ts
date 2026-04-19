@@ -6,7 +6,7 @@ export async function register() {
 
 
     // to change all is_likes=true to false for new start
-    const { error } = await (supabase as any)
+    await supabase
       .from('movies')
       .update({ is_liked: false })
       .eq('is_liked', true);
