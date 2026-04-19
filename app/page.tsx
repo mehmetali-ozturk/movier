@@ -504,7 +504,6 @@ export default function Home() {
         isOpen={showWatchlistPanel}
         onClose={() => setShowWatchlistPanel(false)}
         watchlist={watchlist}
-        onUpdate={updateWatchlist}
         onRemove={handleRemoveFromWatchlist}
         onToggleWatched={handleToggleWatched}
         canToggleWatched={!!user}

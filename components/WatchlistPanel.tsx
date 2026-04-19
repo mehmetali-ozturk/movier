@@ -10,7 +10,6 @@ interface WatchlistPanelProps {
   isOpen: boolean;
   onClose: () => void;
   watchlist: Movie[];
-  onUpdate: () => void;
   onRemove: (movieId: number) => void;
   onToggleWatched: (movieId: number, watched: boolean) => Promise<void> | void;
   canToggleWatched: boolean;
@@ -22,7 +21,6 @@ export default function WatchlistPanel({
   isOpen,
   onClose,
   watchlist,
-  onUpdate,
   onRemove,
   onToggleWatched,
   canToggleWatched,
@@ -116,12 +114,10 @@ export default function WatchlistPanel({
 
   const handleRemove = (movieId: number) => {
     onRemove(movieId);
-    onUpdate();
   };
 
   const handleClearAll = () => {
     onClearAll();
-    onUpdate();
     setShowClearConfirm(false);
   };
 
