@@ -89,8 +89,13 @@ Open `http://localhost:3000`.
 ```text## Project Structure
 📦 movier
  ┣ 📂 app
- ┃ ┣ 📂 api/tmdb
- ┃ ┃ ┗ 📜 route.ts
+ ┃ ┣ 📂 api
+ ┃ ┃ ┣ 📂 embed
+ ┃ ┃ ┃ ┗ 📜 route.ts          
+ ┃ ┃ ┣ 📂 recommend
+ ┃ ┃ ┃ ┗ 📜 route.ts         
+ ┃ ┃ ┗ 📂 tmdb
+ ┃ ┃   ┗ 📜 route.ts
  ┃ ┣ 📜 globals.css
  ┃ ┣ 📜 layout.tsx
  ┃ ┗ 📜 page.tsx
@@ -110,6 +115,7 @@ Open `http://localhost:3000`.
  ┃ ┣ 📜 storage.local.ts
  ┃ ┣ 📜 storage.ts
  ┃ ┗ 📜 supabase.ts
+ ┣ 📜 instrumentation.ts      
  ┣ 📜 ARCHITECTURE.md
  ┣ 📜 package.json
  ┣ 📜 README.md
