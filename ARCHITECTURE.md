@@ -3,8 +3,7 @@
 **Project Name:** Movier
 **Course:** SWE332 Software Architecture Project Part 2
 **Date:** 07.04.2026
-**Team Members:** 
-- Mehmet Ali Öztürk
+**Team Members:** - Mehmet Ali Öztürk
 - Deniz Eren Gençtürk
 - Ali Yekta Dalkılıç
 
@@ -15,6 +14,7 @@
 | Version | Date       | Author(s) | Description |
 |---------|------------|-----------|-------------|
 | 1.0     | 07.04.2026 | Team      | Initial draft of 4+1 Architectural View Model |
+| 2.0     | 19.04.2026 | Team      | Updated to reflect AI-powered recommendation engine and vector database integration |
 
 ---
 
@@ -43,36 +43,40 @@
 ---
 
 ## 1. Scope
-The Movier application is a comprehensive swipe-based movie discovery platform designed to allow users to search, discover, and review movies. The system supports both anonymous usage (via local storage) and authenticated usage with cloud synchronization. It integrates with external movie databases (TMDB API) to fetch real-time movie data and utilizes Supabase for authentication, database management (PostgreSQL), and avatar storage.
+The Movier application is a comprehensive swipe-based movie discovery platform enhanced by artificial intelligence. It allows users to search, discover, and review movies while providing highly personalized, semantic AI-based recommendations. The system supports both anonymous usage (via local storage) and authenticated usage with cloud synchronization. It integrates with external movie databases (TMDB API) to fetch real-time movie data, utilizes Hugging Face for generating semantic text embeddings, and relies on Supabase for authentication, vector database management (PostgreSQL `pgvector`), and user state persistence.
 
 ## 2. References
 * SWE332 Software Architecture Course Slides (Week 2)
 * Kruchten, P. B. (1995). The 4+1 View Model of architecture. IEEE Software.
 * Next.js 16 Documentation
-* Supabase Documentation (Auth, Postgres, RLS)
+* Supabase Documentation (Auth, Postgres, RLS, `pgvector`)
 * TMDB API Documentation
+* Hugging Face Inference API Documentation
 
 ---
 
 ## 3. Software Architecture
-Movier adopts a **Cloud-Native / Serverless Architecture** utilizing a **Client-Server** pattern. The frontend is built as a React Server Component (RSC) architecture powered by Next.js 16 (App Router) using React 19, Tailwind CSS 4, and Framer Motion. The backend logic is handled by Next.js Serverless API routes (`/api/tmdb`) to securely communicate with external APIs. Supabase acts as a Backend-as-a-Service (BaaS), handling data persistence via PostgreSQL.
+Movier adopts a **Cloud-Native / Serverless Architecture** utilizing a **Client-Server** pattern. The frontend is built as a React Server Component (RSC) architecture powered by Next.js 16 (App Router) using React 19, Tailwind CSS 4, and Framer Motion.
+
+The backend logic is handled by Next.js Serverless API routes, specifically focusing on secure proxy requests (`/api/tmdb`) and AI inference processing (`/api/embed`, `/api/recommend`). The system utilizes Supabase as a Backend-as-a-Service (BaaS) for relational data and, crucially, as a vector database using the `pgvector` extension to perform cosine similarity searches for semantic movie matching. Hugging Face serves as the external machine learning provider for embedding generation.
 
 ---
 
 ## 4. Architectural Goals & Constraints
 **Goals:**
-* **Fluid User Experience:** Provide a seamless swipe-based UI using Framer Motion.
-* **Security:** Keep the TMDB API key secure via server-side API proxying.
-* **Hybrid Data Persistence:** Support both offline (local storage) and online (cloud sync) watchlists securely via Supabase RLS (Row Level Security).
+* **Intelligent Recommendations:** Provide highly accurate, personalized movie recommendations based on the semantic analysis of movie overviews rather than basic genre matching.
+* **Fluid User Experience:** Maintain a seamless swipe-based UI using Framer Motion without blocking the main thread during heavy backend AI operations.
+* **Security:** Keep the TMDB API key and Hugging Face inference tokens secure via server-side API proxying.
+* **Hybrid Data Persistence:** Support both offline (local storage) and online (cloud sync) data flows.
 
 **Constraints:**
-* Vercel serverless functions execution time limits.
-* Free-tier limits of third-party services (TMDB API rate limits and Supabase free-tier database sizes).
+* Vercel serverless functions execution time limits (which necessitates asynchronous processing for embedding generation).
+* Free-tier limits of third-party services (TMDB API rate limits, Hugging Face API rate limits, and Supabase free-tier database sizes).
 
 ---
 
 ## 5. Logical Architecture
-The system is divided into three main logical layers: Presentation, Business Logic, and Data Access.
+The system is divided into three main logical layers: Presentation, Business Logic & AI, and Data Access.
 
 ```mermaid
 flowchart TD
@@ -81,76 +85,102 @@ flowchart TD
         AuthCtx[Auth Context / State]
     end
 
-    subgraph Business Logic & Proxy
-        API[Next.js API Route /api/tmdb]
+    subgraph Business Logic & AI Proxy
+        TMDB_API[Next.js API Route /api/tmdb]
+        Embed_API[Next.js API Route /api/embed]
+        Rec_API[Next.js API Route /api/recommend]
         StoreClient[Storage Services / lib]
     end
 
     subgraph External Systems & Data Layer
-        Supabase[(Supabase Postgres & Auth)]
+        Supabase[(Supabase Postgres & pgvector)]
         TMDB[TMDB External API]
+        HF[Hugging Face API]
         LocalDB[(Browser LocalStorage)]
     end
 
     UI -->|Reads Auth State| AuthCtx
-    UI -->|Requests Movie Data| API
-    UI -->|Saves Liked Movies| StoreClient
+    UI -->|Requests Regular Movies| TMDB_API
+    UI -->|Requests AI Recommendations| Rec_API
+    UI -->|Saves Liked Movies / Triggers Embed| StoreClient
     
     AuthCtx -->|Auth Operations| Supabase
-    API -->|Secure Request Hidden API Key| TMDB
+    TMDB_API -->|Secure Request Hidden API Key| TMDB
     
     StoreClient -->|If Authenticated| Supabase
+    StoreClient -->|Calls /api/embed (Async)| Embed_API
     StoreClient -->|If Anonymous User| LocalDB
+
+    Embed_API -->|Requests Vector Embedding| HF
+    Embed_API -->|Saves Vector| Supabase
+    
+    Rec_API -->|Executes RPC Match Function| Supabase
+    Rec_API -->|Fetches Full Movie Details| TMDB
 ```
 
 ---
 
 ## 6. Process Architecture
-Describes the runtime behavior, concurrency, and flow of data when a user interacts with the application.
+Describes the runtime behavior, specifically focusing on the new AI recommendation process.
 
 ```mermaid
 sequenceDiagram
     actor User
-    participant UI as React UI (MovieCard)
-    participant API as Next.js API
+    participant UI as React UI (Page / MovieCard)
+    participant RecAPI as /api/recommend
+    participant EmbedAPI as /api/embed
+    participant HF as Hugging Face
+    participant DB as Supabase DB (pgvector)
     participant TMDB as TMDB API
-    participant Store as lib/storage
-    participant DB as Supabase DB
 
-    User->>UI: Opens Application
-    UI->>API: Requests Movie List
-    API->>TMDB: GET /discover/movie (with API Key)
-    TMDB-->>API: JSON Response
-    API-->>UI: Movies Displayed on Screen
-    User->>UI: Swipes Right (Likes)
-    UI->>Store: saveMovie(movie_id)
+    Note over User, DB: Scenario A: Creating the Preference Profile
+    User->>UI: Swipes Right (Likes "Iron Man")
+    UI-->>User: Optimistic UI Update
+    UI->>EmbedAPI: POST /api/embed { movieId } (Async)
+    EmbedAPI->>TMDB: Fetch "Iron Man" overview
+    TMDB-->>EmbedAPI: Movie Data
+    EmbedAPI->>HF: Generate semantic embedding for overview
+    HF-->>EmbedAPI: Vector Array [0.12, -0.45, ...]
+    EmbedAPI->>DB: UPDATE movies SET embedding = Vector, is_liked = true
     
-    alt If Authenticated
-        Store->>DB: Save to Supabase watchlist table
-        DB-->>Store: Success
-    else If Anonymous User
-        Store->>Store: Save to Browser LocalStorage
-    end
+    Note over User, TMDB: Scenario B: Requesting AI Recommendations
+    User->>UI: Clicks "AI Recommend" Button
+    UI->>RecAPI: POST /api/recommend
+    RecAPI->>DB: SELECT embedding FROM movies WHERE is_liked = true
+    DB-->>RecAPI: User's Liked Vectors
+    RecAPI->>RecAPI: Calculate Average Vector Profile
+    RecAPI->>DB: Execute RPC match_movies(AvgVector)
+    DB-->>RecAPI: Returns matched movie IDs (excluding already liked)
+    RecAPI->>TMDB: Fetch full details for matched IDs
+    TMDB-->>RecAPI: Full Movie Data
+    RecAPI-->>UI: Displays Personalized Movie Cards
 ```
 
 ---
 
 ## 7. Development Architecture
-The repository is structured using the Next.js App Router, separating frontend and backend concerns.
+The repository is structured using the Next.js App Router, carefully separating UI components, API routes, and cloud service integrations.
 
 ```mermaid
 flowchart LR
     subgraph Movier Repository
         direction TB
-        APP[app/] --> API_ROUTE[api/tmdb/route.ts]
-        APP --> PAGES[page.tsx / layout.tsx]
+        
+        subgraph API Routes
+            APP_API[app/api/] --> TMDB[tmdb/route.ts]
+            APP_API --> EMBED[embed/route.ts]
+            APP_API --> REC[recommend/route.ts]
+        end
+
+        APP[app/] --> PAGES[page.tsx / layout.tsx]
+        APP --> INSTRUMENT[instrumentation.ts]
 
         COMP[components/] --> CARDS[MovieCard.tsx]
         COMP --> PANELS[WatchlistPanel.tsx]
 
         LIB[lib/] --> AUTH[auth-context.tsx]
         LIB --> STORE_C[storage.cloud.ts]
-        LIB --> STORE_L[storage.ts]
+        LIB --> STORE_L[storage.local.ts]
 
         ROOT[Root] --> ENV[.env.local]
         ROOT --> SQL[supabase_migration.sql]
@@ -160,7 +190,7 @@ flowchart LR
 ---
 
 ## 8. Physical Architecture
-The deployment is fully cloud-based, distributed across Vercel and Supabase cloud infrastructure.
+The deployment is fully cloud-based, distributed across Vercel, Supabase, and Hugging Face infrastructure.
 
 ```mermaid
 flowchart TD
@@ -173,44 +203,50 @@ flowchart TD
 
     subgraph Supabase Platform
         Auth[Supabase Auth]
-        DB[(PostgreSQL Watchlist DB)]
-        S3[Supabase Storage - Avatars]
+        DB[(PostgreSQL with pgvector)]
     end
 
-    subgraph External
+    subgraph External Inference
+        HF[Hugging Face Servers]
+    end
+
+    subgraph External Data
         TMDB[TMDB Servers]
     end
 
     Client -->|HTTPS Requests| CDN
     CDN --> Node
-    Node -->|Secure Background Request| TMDB
+    Node -->|Metadata Requests| TMDB
+    Node -->|Inference Requests| HF
+    Node -->|Vector Similarity Queries| DB
     Client -->|Auth Token| Auth
-    Client -->|Read/Write Data| DB
-    Client -->|Avatar Upload| S3
+    Client -->|Standard Read/Write Data| DB
 ```
 
 ---
 
 ## 9. Scenarios
-**Scenario 1: User Swipes Right on a Movie**
-* User views a movie via the Swipe UI (`MovieCard.tsx`).
-* User swipes right to "Like" the movie. Framer motion handles the animation.
-* The system checks the authentication state (`auth-context.tsx`).
-* **If Anonymous:** The `movie_id` is appended to the browser's `localStorage` via `lib/storage.ts`.
-* **If Authenticated:** The `movie_id` is sent via Supabase client to the PostgreSQL `watchlist` table via `lib/storage.cloud.ts`.
-* The `WatchlistPanel.tsx` re-renders to reflect the new state.
+**Scenario 1: Generating Semantic Recommendations**
+* User clicks the "AI Analyze" button.
+* The frontend forces Vercel to bypass the cache and calls `/api/recommend`.
+* The server retrieves all movies marked as `is_liked: true` by the user from the Supabase database.
+* The server calculates an "average preference vector" from the user's liked movies.
+* A Remote Procedure Call (RPC) named `match_movies` is executed on Supabase. Using the `pgvector` extension, it calculates the cosine similarity between the user's average vector and the rest of the database, efficiently returning the closest matches.
+* The server filters out movies the user has already liked.
+* The server fetches high-resolution metadata for the remaining matched IDs from TMDB and returns them to the client for display.
 
 ---
 
 ## 10. Size and Performance
-* **Storage:** To optimize database storage on Supabase, the cloud watchlist only stores the `movie_id`. Full movie details are fetched dynamically.
-* **Performance:** Vercel edge caching ensures fast page loads. The server-side TMDB proxy utilizes short caching to reduce redundant network calls.
+* **Storage:** The `movies` table in Supabase requires increased storage capacity due to the 384-dimensional floating-point vectors stored for each movie.
+* **Performance:** * To prevent blocking the UI, vector generation (`/api/embed`) is performed asynchronously in the background.
+    * `force-dynamic` is utilized on AI API routes to ensure fresh recommendations rather than stale Vercel edge-cached responses.
 
 ---
 
 ## 11. Quality
 * **Reliability:** Utilizing robust cloud providers (Vercel, Supabase) ensures high availability.
-* **Security:** Row-Level Security (RLS) policies in PostgreSQL ensure users can only access their own data. Environment variables protect API keys from exposure.
+* **Modularity:** The introduction of the AI recommendation engine was achieved without altering the core swipe mechanism, demonstrating strong separation of concerns.
 
 ---
 
@@ -224,11 +260,9 @@ flowchart TD
 * **BaaS:** Backend as a Service
 * **RSC:** React Server Components
 * **RLS:** Row Level Security
+* **RPC:** Remote Procedure Call
 
 ### Definitions
-* **Supabase:** An open-source alternative providing a PostgreSQL database, Auth, and Storage.
-* **Vercel:** A cloud platform for static sites and Serverless Functions used for frontend deployment.
-
-### Design Principles
-* **Separation of Concerns (SoC):** UI rendering is strictly isolated from data fetching and state management.
-* **Progressive Enhancement:** Works completely offline, and enhances to cloud-sync if the user logs in.
+* **Supabase (`pgvector`):** An open-source PostgreSQL extension utilized for storing vector embeddings and executing exact and approximate nearest-neighbor search.
+* **Vector Embedding:** A numerical representation of text (e.g., a movie overview) capturing its semantic meaning.
+* **Hugging Face:** A platform and API provider utilized for running machine learning inference (generating text embeddings).
