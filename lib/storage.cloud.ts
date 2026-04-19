@@ -14,19 +14,23 @@ export async function cloudGetWatchlist(userId: string): Promise<Movie[]> {
   const supabase = createClient();
   const { data, error } = await supabase
     .from("watchlist")
-    .select("movie_id")
+    .select("movie_id, watched")
     .eq("user_id", userId)
     .order("added_at", { ascending: false });
 
   if (error || !data) return [];
-  return data.map((row) => ({ id: row.movie_id, title: "" }));
+  return data.map((row) => ({
+    id: row.movie_id,
+    title: "",
+    watched: !!row.watched,
+  }));
 }
 
 export async function cloudAddToWatchlist(movieId: number, userId: string): Promise<void> {
   const supabase = createClient();
   await supabase
     .from("watchlist")
-    .upsert({ user_id: userId, movie_id: movieId }, { onConflict: "user_id,movie_id" });
+    .upsert({ user_id: userId, movie_id: movieId, watched: false }, { onConflict: "user_id,movie_id" });
 }
 
 export async function cloudRemoveFromWatchlist(movieId: number, userId: string): Promise<void> {

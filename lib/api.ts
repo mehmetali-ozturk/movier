@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase";
 export interface Movie {
   id: number;
   title: string;
+  watched?: boolean;
   originalTitle?: string;
   overview?: string;
   posterPath?: string;

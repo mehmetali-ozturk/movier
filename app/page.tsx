@@ -9,7 +9,7 @@ import Image from "next/image";
 import { Heart, X, Info, Languages, List, SlidersHorizontal, LogIn, Sparkles } from "lucide-react";
 import { Movie, fetchMovies, Language, FilterOptions, fetchMovieDetails } from "@/lib/api";
 import { getWatchlist, addToWatchlist, removeFromWatchlist, clearWatchlist, getLikedGenres, getLanguagePreference, setLanguagePreference } from "@/lib/storage";
-import { cloudGetWatchlist, cloudAddToWatchlist, cloudRemoveFromWatchlist, cloudClearWatchlist, cloudGetLanguage, cloudSetLanguage, migrateLocalToCloud } from "@/lib/storage.cloud";
+import { cloudGetWatchlist, cloudAddToWatchlist, cloudRemoveFromWatchlist, cloudClearWatchlist, cloudMarkWatched, cloudGetLanguage, cloudSetLanguage, migrateLocalToCloud } from "@/lib/storage.cloud";
 import { useAuth } from "@/lib/auth-context";
 import AuthModal from "@/components/AuthModal";
 import ProfilePanel from "@/components/ProfilePanel";
@@ -236,6 +236,21 @@ export default function Home() {
     } else {
       clearWatchlist();
     }
+    await updateWatchlist();
+  };
+
+  const handleToggleWatched = async (movieId: number, watched: boolean) => {
+    if (!user) {
+      setShowAuthModal(true);
+      return;
+    }
+
+    // Optimistic UI update for quick feedback.
+    setWatchlist(prev => prev.map(movie => (
+      movie.id === movieId ? { ...movie, watched } : movie
+    )));
+
+    await cloudMarkWatched(movieId, user.id, watched);
     await updateWatchlist();
   };
 
@@ -491,6 +506,8 @@ export default function Home() {
         watchlist={watchlist}
         onUpdate={updateWatchlist}
         onRemove={handleRemoveFromWatchlist}
+        onToggleWatched={handleToggleWatched}
+        canToggleWatched={!!user}
         onClearAll={handleClearWatchlist}
         language={language}
       />

@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Star, Calendar, Trash2, ExternalLink, Film, Search, ArrowUpDown } from "lucide-react";
+import { X, Star, Calendar, Trash2, ExternalLink, Film, Search, ArrowUpDown, CheckCircle2 } from "lucide-react";
 import { Movie, Language, fetchMovieDetails } from "@/lib/api";
 import { useState, useEffect, useMemo } from "react";
 import TmdbImage from "@/components/TmdbImage";
@@ -12,11 +12,23 @@ interface WatchlistPanelProps {
   watchlist: Movie[];
   onUpdate: () => void;
   onRemove: (movieId: number) => void;
+  onToggleWatched: (movieId: number, watched: boolean) => Promise<void> | void;
+  canToggleWatched: boolean;
   onClearAll: () => void;
   language: Language;
 }
 
-export default function WatchlistPanel({ isOpen, onClose, watchlist, onUpdate, onRemove, onClearAll, language }: WatchlistPanelProps) {
+export default function WatchlistPanel({
+  isOpen,
+  onClose,
+  watchlist,
+  onUpdate,
+  onRemove,
+  onToggleWatched,
+  canToggleWatched,
+  onClearAll,
+  language,
+}: WatchlistPanelProps) {
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [localizedMovies, setLocalizedMovies] = useState<Movie[]>([]);
   const [loading, setLoading] = useState(false);
@@ -28,6 +40,7 @@ export default function WatchlistPanel({ isOpen, onClose, watchlist, onUpdate, o
   // Results are cached in api.ts so subsequent opens are instant.
   useEffect(() => {
     let cancelled = false;
+    const watchedById = new Map(watchlist.map((movie) => [movie.id, !!movie.watched]));
 
     async function fetchInBatches() {
       if (!isOpen || watchlist.length === 0) return;
@@ -39,7 +52,13 @@ export default function WatchlistPanel({ isOpen, onClose, watchlist, onUpdate, o
         if (cancelled) return;
         const chunk = watchlist.slice(i, i + BATCH);
         const fetched = await Promise.all(chunk.map(m => fetchMovieDetails(m.id, language)));
-        fetched.forEach(m => { if (m) results.push(m); });
+        fetched.forEach(movie => {
+          if (!movie) return;
+          results.push({
+            ...movie,
+            watched: watchedById.get(movie.id) ?? false,
+          });
+        });
       }
       if (!cancelled) {
         setLocalizedMovies(results);
@@ -296,6 +315,13 @@ export default function WatchlistPanel({ isOpen, onClose, watchlist, onUpdate, o
                             {movie.title}
                           </h3>
 
+                          {movie.watched && (
+                            <div className="mb-2 inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-green-600/20 border border-green-600/40 text-green-300 text-xs font-semibold">
+                              <CheckCircle2 size={12} />
+                              {language === "en" ? "Watched" : "İzlendi"}
+                            </div>
+                          )}
+
                           <div className="flex items-center gap-2 mb-2">
                             {movie.voteAverage && (
                               <div className="flex items-center gap-1">
@@ -328,6 +354,21 @@ export default function WatchlistPanel({ isOpen, onClose, watchlist, onUpdate, o
 
                           {/* Actions */}
                           <div className="flex gap-2">
+                            {canToggleWatched && (
+                              <button
+                                onClick={() => { void onToggleWatched(movie.id, !movie.watched); }}
+                                className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm transition ${
+                                  movie.watched
+                                    ? "bg-green-600/20 hover:bg-green-600/30 text-green-300"
+                                    : "bg-blue-600/20 hover:bg-blue-600/30 text-blue-300"
+                                }`}
+                              >
+                                <CheckCircle2 size={14} />
+                                {movie.watched
+                                  ? (language === "en" ? "Unwatch" : "İzlenmedi")
+                                  : (language === "en" ? "Watched" : "İzlendi")}
+                              </button>
+                            )}
                             <button
                               onClick={() => handleRemove(movie.id)}
                               className="flex items-center gap-1 px-3 py-1.5 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg text-sm transition"
