@@ -19,20 +19,33 @@ const [trailerKey, setTrailerKey] = useState<string | null>(null);
 const [trailerLoading, setTrailerLoading] = useState(false);
 
 useEffect(() => {
-  if (movie) {
-    setLoading(true);
-    setTrailerKey(null);
-    fetchMovieDetails(movie.id, language).then((details) => {
-      setDetailedMovie(details || movie);
-      setLoading(false);
-    });
+  if (!movie) return;
 
+  let cancelled = false;
+
+  const loadDetails = async () => {
+    setLoading(true);
     setTrailerLoading(true);
-    fetchMovieTrailer(movie.id).then((key) => {
-      setTrailerKey(key);
-      setTrailerLoading(false);
-    });
-  }
+    setTrailerKey(null);
+
+    const [details, key] = await Promise.all([
+      fetchMovieDetails(movie.id, language),
+      fetchMovieTrailer(movie.id),
+    ]);
+
+    if (cancelled) return;
+
+    setDetailedMovie(details || movie);
+    setTrailerKey(key);
+    setLoading(false);
+    setTrailerLoading(false);
+  };
+
+  void loadDetails();
+
+  return () => {
+    cancelled = true;
+  };
 }, [movie, language]);
 
   if (!movie) return null;

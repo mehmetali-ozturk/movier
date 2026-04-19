@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Film } from "lucide-react";
 import { getImageUrl } from "@/lib/api";
+import Image from "next/image";
 
 interface TmdbImageProps {
   path?: string;
@@ -21,12 +22,10 @@ export default function TmdbImage({
   fallbackClassName,
   iconSize = 48,
 }: TmdbImageProps) {
-  const [failed, setFailed] = useState(false);
+  const [failedSrc, setFailedSrc] = useState<string | null>(null);
   const src = useMemo(() => (path ? getImageUrl(path, size) : null), [path, size]);
 
-  useEffect(() => {
-    setFailed(false);
-  }, [src]);
+  const failed = !!src && failedSrc === src;
 
   if (!src || failed) {
     return (
@@ -37,12 +36,15 @@ export default function TmdbImage({
   }
 
   return (
-    <img
+    <Image
       src={src}
       alt={alt}
+      width={500}
+      height={750}
+      unoptimized
       className={className}
       draggable={false}
-      onError={() => setFailed(true)}
+      onError={() => setFailedSrc(src)}
     />
   );
 }

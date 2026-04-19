@@ -1,7 +1,7 @@
 "use client";
 
-import { motion, useMotionValue, useTransform, useSpring } from "framer-motion";
-import { Movie, Language,getImageUrl } from "@/lib/api";
+import { motion, useMotionValue, useTransform, type PanInfo } from "framer-motion";
+import { Movie, Language } from "@/lib/api";
 import { Star, Calendar, Heart, X, Film, ChevronUp } from "lucide-react";
 import TmdbImage from "@/components/TmdbImage";
 
@@ -16,8 +16,6 @@ export default function MovieCard({ movie, nextMovie, onSwipe, language }: Movie
   const x = useMotionValue(0);
   const y = useMotionValue(0);
 
-  const smoothX = useSpring(x, { stiffness: 400, damping: 40 });
-
   const rotate = useTransform(x, [-250, 0, 250], [-35, 0, 35]);
   const opacity = useTransform(x, [-250, -180, 0, 180, 250], [0, 1, 1, 1, 0]);
 
@@ -28,12 +26,13 @@ export default function MovieCard({ movie, nextMovie, onSwipe, language }: Movie
   const backCardScale = useTransform(x, [-250, 0, 250], [1, 0.92, 1]);
   const backCardOpacity = useTransform(x, [-250, -100, 0, 100, 250], [1, 0.8, 0.6, 0.8, 1]);
   const backCardBlur = useTransform(x, [-250, 0, 250], [0, 8, 0]);
+  const backCardBackdropFilter = useTransform(backCardBlur, (v) => `blur(${v}px)`);
 
   const likeOverlayOpacity = useTransform(x, [0, 120], [0, 0.75]);
   const nopeOverlayOpacity = useTransform(x, [-120, 0], [0.75, 0]);
   const upOverlayOpacity = useTransform(y, [-120, 0], [0.75, 0]);
 
-  const handleDragEnd = (_: any, info: any) => {
+  const handleDragEnd = (_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     const threshold = 100;
     if (info.offset.y < -threshold && Math.abs(info.offset.x) < threshold) {
       onSwipe("up");
@@ -69,7 +68,7 @@ export default function MovieCard({ movie, nextMovie, onSwipe, language }: Movie
           )}
           <motion.div
             className="absolute inset-0 bg-black/50"
-            style={{ backdropFilter: useTransform(backCardBlur, v => `blur(${v}px)`) }}
+            style={{ backdropFilter: backCardBackdropFilter }}
           />
         </motion.div>
       )}

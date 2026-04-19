@@ -7,7 +7,7 @@ import MovieDetailsModal from "@/components/MovieDetailsModal";
 import WatchlistPanel from "@/components/WatchlistPanel";
 import Image from "next/image";
 import { Heart, X, Info, Languages, List, SlidersHorizontal, LogIn, Sparkles } from "lucide-react";
-import { Movie, fetchMovies, Language, FilterOptions,getImageUrl,fetchMovieDetails} from "@/lib/api";
+import { Movie, fetchMovies, Language, FilterOptions, fetchMovieDetails } from "@/lib/api";
 import { getWatchlist, addToWatchlist, removeFromWatchlist, clearWatchlist, getLikedGenres, getLanguagePreference, setLanguagePreference } from "@/lib/storage";
 import { cloudGetWatchlist, cloudAddToWatchlist, cloudRemoveFromWatchlist, cloudClearWatchlist, cloudGetLanguage, cloudSetLanguage, migrateLocalToCloud } from "@/lib/storage.cloud";
 import { useAuth } from "@/lib/auth-context";
@@ -17,6 +17,10 @@ import FilterBar from "@/components/FilterBar";
 import EmptyState from "@/components/EmptyState";
 
 export default function Home() {
+  interface RecommendationItem {
+    id: number;
+  }
+
   const { user, loading: authLoading, signOut } = useAuth();
 
   const [movies, setMovies] = useState<Movie[]>([]);
@@ -41,7 +45,7 @@ export default function Home() {
   useEffect(() => {
     setHasMounted(true);
     const resetLikesOnEntry = async () => {
-        const supabase = createClient() as any; // Type bypass
+        const supabase = createClient();
         const { error } = await supabase
           .from("movies")
           .update({ is_liked: false })
@@ -73,7 +77,7 @@ export default function Home() {
     } else {
       setWatchlist(getWatchlist());
     }
-  }, [user, authLoading]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [user, authLoading]);
 
   const updateWatchlist = async () => {
     if (user) {
@@ -149,7 +153,7 @@ export default function Home() {
        if (data.recommendations && data.recommendations.length > 0) {
          // DÜZELTME: Sadece ID'yi alıp, filmin tüm afiş, yıl, tür detaylarını TMDB'den canlı çekiyoruz!
          const fullMovies = await Promise.all(
-           data.recommendations.map((rec: any) => fetchMovieDetails(rec.id, language))
+           (data.recommendations as RecommendationItem[]).map((rec) => fetchMovieDetails(rec.id, language))
          );
 
          // Boş dönenleri filtrele (filter(Boolean)) ve listeye aktar
@@ -370,9 +374,11 @@ export default function Home() {
                     title={user.email ?? "Profile"}
                   >
                     {user.user_metadata?.avatar_url ? (
-                      <img
-                        src={user.user_metadata.avatar_url as string}
+                      <Image
+                        src={String(user.user_metadata.avatar_url)}
                         alt="avatar"
+                        width={20}
+                        height={20}
                         className="w-5 h-5 rounded-full object-cover"
                       />
                     ) : (

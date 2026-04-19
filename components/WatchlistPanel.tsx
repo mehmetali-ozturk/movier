@@ -27,15 +27,12 @@ export default function WatchlistPanel({ isOpen, onClose, watchlist, onUpdate, o
   // Fetch movie details in batches to avoid hammering TMDB rate limits.
   // Results are cached in api.ts so subsequent opens are instant.
   useEffect(() => {
-    if (!isOpen || watchlist.length === 0) {
-      setLocalizedMovies([]);
-      return;
-    }
-
     let cancelled = false;
-    setLoading(true);
 
     async function fetchInBatches() {
+      if (!isOpen || watchlist.length === 0) return;
+
+      setLoading(true);
       const BATCH = 5;
       const results: Movie[] = [];
       for (let i = 0; i < watchlist.length; i += BATCH) {
@@ -54,7 +51,10 @@ export default function WatchlistPanel({ isOpen, onClose, watchlist, onUpdate, o
     return () => { cancelled = true; };
   }, [isOpen, watchlist, language]);
 
-  const displayMovies = localizedMovies.length > 0 ? localizedMovies : watchlist;
+  const displayMovies = useMemo(() => {
+    if (watchlist.length === 0) return [];
+    return localizedMovies.length > 0 ? localizedMovies : watchlist;
+  }, [watchlist, localizedMovies]);
 
   const allGenres = useMemo(() => {
     const genreSet = new Set<string>();

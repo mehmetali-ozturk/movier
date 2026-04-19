@@ -45,11 +45,24 @@ export default function ProfilePanel({
 
   useEffect(() => {
     if (!isOpen) return;
-    if (isGoogleUser && googleAvatar) {
-      setAvatarUrl(googleAvatar);
-    } else {
-      cloudGetAvatarUrl(user.id).then((url) => setAvatarUrl(url));
-    }
+
+    let cancelled = false;
+
+    const loadAvatar = async () => {
+      if (isGoogleUser && googleAvatar) {
+        if (!cancelled) setAvatarUrl(googleAvatar);
+        return;
+      }
+
+      const url = await cloudGetAvatarUrl(user.id);
+      if (!cancelled) setAvatarUrl(url);
+    };
+
+    void loadAvatar();
+
+    return () => {
+      cancelled = true;
+    };
   }, [isOpen, user.id, isGoogleUser, googleAvatar]);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
