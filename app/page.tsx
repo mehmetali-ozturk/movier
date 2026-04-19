@@ -1,12 +1,11 @@
 "use client";
 // app/page.tsx dosyasının en üstüne ekle:
-import { createClient } from "@/lib/supabase";
 import { useState, useEffect, useRef } from "react";
 import MovieCard from "@/components/MovieCard";
 import MovieDetailsModal from "@/components/MovieDetailsModal";
 import WatchlistPanel from "@/components/WatchlistPanel";
 import Image from "next/image";
-import { Heart, X, Info, Languages, List, SlidersHorizontal, LogIn, Sparkles, RotateCcw } from "lucide-react";
+import { Heart, X, Info, Languages, List, SlidersHorizontal, LogIn, Sparkles } from "lucide-react";
 import { Movie, fetchMovies, Language, FilterOptions, fetchMovieDetails } from "@/lib/api";
 import { getWatchlist, addToWatchlist, removeFromWatchlist, clearWatchlist, getLikedGenres, getLanguagePreference, setLanguagePreference } from "@/lib/storage";
 import { cloudGetWatchlist, cloudAddToWatchlist, cloudRemoveFromWatchlist, cloudClearWatchlist, cloudMarkWatched, cloudGetLanguage, cloudSetLanguage, migrateLocalToCloud } from "@/lib/storage.cloud";
@@ -38,7 +37,6 @@ export default function Home() {
   const [apiKeyMissing, setApiKeyMissing] = useState(false);
   const [noResults, setNoResults] = useState(false);
   const [hasMounted, setHasMounted] = useState(false);
-  const [resettingLikes, setResettingLikes] = useState(false);
 
   const [isAiMode, setIsAiMode] = useState(false);
   const seenMovieIdsRef = useRef<Set<number>>(new Set());
@@ -104,40 +102,6 @@ export default function Home() {
       setWatchlist(cloud);
     } else {
       setWatchlist(getWatchlist());
-    }
-  };
-
-  const resetLikedMovies = async () => {
-    const supabase = createClient();
-    const { error } = await supabase
-      .from("movies")
-      .update({ is_liked: false })
-      .eq("is_liked", true);
-
-    if (error) {
-      console.error("Like reset error:", error.message);
-      return false;
-    }
-
-    return true;
-  };
-
-  const handleResetLikes = async () => {
-    const confirmMessage = language === "en"
-      ? "Reset liked movie history?"
-      : "Begeni gecmisini sifirlamak istiyor musun?";
-
-    if (!window.confirm(confirmMessage)) return;
-
-    setResettingLikes(true);
-    try {
-      const success = await resetLikedMovies();
-      if (success) {
-        setIsAiMode(false);
-        setNoResults(false);
-      }
-    } finally {
-      setResettingLikes(false);
     }
   };
 
@@ -381,15 +345,6 @@ export default function Home() {
                 title={language === "en" ? "AI Recommendations" : "AI Önerisi"}
               >
                 <Sparkles className="text-purple-300" size={20} />
-              </button>
-
-              <button
-                onClick={handleResetLikes}
-                disabled={resettingLikes}
-                className="p-2 rounded-lg bg-amber-600/20 hover:bg-amber-600/30 border border-amber-600/50 transition disabled:opacity-60"
-                title={language === "en" ? "Reset liked history" : "Begeni gecmisini sifirla"}
-              >
-                <RotateCcw className={`text-amber-300 ${resettingLikes ? "animate-spin" : ""}`} size={20} />
               </button>
 
               <button onClick={() => setShowFilterBar(prev => !prev)}
