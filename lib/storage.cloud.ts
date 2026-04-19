@@ -11,7 +11,7 @@ import { Movie } from "@/lib/api";
  * WatchlistPanel fetches full details from TMDB via fetchMovieDetails.
  */
 export async function cloudGetWatchlist(userId: string): Promise<Movie[]> {
-  const supabase = createClient() as any; // Type Bypass eklendi
+  const supabase = createClient();
   const { data, error } = await supabase
     .from("watchlist")
     .select("movie_id")
@@ -19,18 +19,18 @@ export async function cloudGetWatchlist(userId: string): Promise<Movie[]> {
     .order("added_at", { ascending: false });
 
   if (error || !data) return [];
-  return data.map((row: any) => ({ id: row.movie_id, title: "" }));
+  return data.map((row) => ({ id: row.movie_id, title: "" }));
 }
 
 export async function cloudAddToWatchlist(movieId: number, userId: string): Promise<void> {
-  const supabase = createClient() as any;
+  const supabase = createClient();
   await supabase
     .from("watchlist")
     .upsert({ user_id: userId, movie_id: movieId }, { onConflict: "user_id,movie_id" });
 }
 
 export async function cloudRemoveFromWatchlist(movieId: number, userId: string): Promise<void> {
-  const supabase = createClient() as any;
+  const supabase = createClient();
   await supabase
     .from("watchlist")
     .delete()
@@ -39,12 +39,12 @@ export async function cloudRemoveFromWatchlist(movieId: number, userId: string):
 }
 
 export async function cloudClearWatchlist(userId: string): Promise<void> {
-  const supabase = createClient() as any;
+  const supabase = createClient();
   await supabase.from("watchlist").delete().eq("user_id", userId);
 }
 
 export async function cloudMarkWatched(movieId: number, userId: string, watched: boolean): Promise<void> {
-  const supabase = createClient() as any;
+  const supabase = createClient();
   await supabase
     .from("watchlist")
     .update({ watched })
@@ -53,7 +53,7 @@ export async function cloudMarkWatched(movieId: number, userId: string, watched:
 }
 
 export async function cloudGetLanguage(userId: string): Promise<string | null> {
-  const supabase = createClient() as any;
+  const supabase = createClient();
   const { data } = await supabase
     .from("user_preferences")
     .select("language")
@@ -63,7 +63,7 @@ export async function cloudGetLanguage(userId: string): Promise<string | null> {
 }
 
 export async function cloudSetLanguage(userId: string, language: string): Promise<void> {
-  const supabase = createClient() as any;
+  const supabase = createClient();
   await supabase
     .from("user_preferences")
     .upsert({ user_id: userId, language, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
@@ -76,14 +76,14 @@ export async function cloudSetLanguage(userId: string, language: string): Promis
    */
 export async function migrateLocalToCloud(userId: string, localMovies: Movie[]): Promise<void> {
   if (localMovies.length === 0) return;
-  const supabase = createClient() as any;
+  const supabase = createClient();
   const rows = localMovies.map(m => ({ user_id: userId, movie_id: m.id }));
   await supabase.from("watchlist").upsert(rows, { onConflict: "user_id,movie_id" });
 }
 
 
 export async function cloudUploadAvatar(userId: string, file: File): Promise<string | null> {
-  const supabase = createClient() as any;
+  const supabase = createClient();
   const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
   const path = `${userId}/avatar.${ext}`;
 
@@ -110,7 +110,7 @@ export async function cloudUploadAvatar(userId: string, file: File): Promise<str
 
 
 export async function cloudGetAvatarUrl(userId: string): Promise<string | null> {
-  const supabase = createClient() as any;
+  const supabase = createClient();
   const { data } = await supabase
     .from("user_preferences")
     .select("avatar_url")

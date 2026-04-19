@@ -2,17 +2,42 @@ import { NextResponse } from 'next/server';
 import { generateMovieEmbedding } from '@/lib/hf';
 import { createClient } from '@/lib/supabase';
 
+interface EmbedRequestBody {
+  movieId?: number;
+}
+
+interface TmdbGenre {
+  name: string;
+}
+
+interface TmdbMovieDetails {
+  id: number;
+  title: string;
+  overview?: string | null;
+  poster_path?: string | null;
+  vote_average?: number | null;
+  genres?: TmdbGenre[];
+}
+
 export async function POST(request: Request) {
   try {
-    const { movieId } = await request.json();
+    const { movieId } = (await request.json()) as EmbedRequestBody;
+
+    if (!movieId || typeof movieId !== 'number') {
+      return NextResponse.json({ error: 'Valid movieId is required.' }, { status: 400 });
+    }
 
 
-    const supabase = createClient() as any ;
+    const supabase = createClient();
 
     const tmdbRes = await fetch(`https://api.themoviedb.org/3/movie/${movieId}?api_key=${process.env.TMDB_API_KEY}`);
-    const movie = await tmdbRes.json();
+    if (!tmdbRes.ok) {
+      throw new Error(`TMDB request failed with status ${tmdbRes.status}`);
+    }
 
-    const genres = movie.genres?.map((g: any) => g.name).join(", ") || "";
+    const movie = (await tmdbRes.json()) as TmdbMovieDetails;
+
+    const genres = movie.genres?.map((g) => g.name).join(", ") || "";
     const textToEmbed = `Title: ${movie.title}. Genres: ${genres}. Description: ${movie.overview}`;
     const embedding = await generateMovieEmbedding(textToEmbed);
 
@@ -34,8 +59,9 @@ export async function POST(request: Request) {
     if (error) throw error;
 
     return NextResponse.json({ success: true });
-  } catch (error: any) {
-    console.error("Embed Error:", error.message);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    console.error("Embed Error:", message);
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

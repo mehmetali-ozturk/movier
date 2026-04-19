@@ -3,9 +3,31 @@ import { createClient } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
 
+interface LikedMovieRow {
+  id: number;
+  embedding: number[] | string | null;
+}
+
+interface RecommendationRow {
+  id: number;
+  similarity?: number;
+}
+
+function parseEmbedding(value: number[] | string | null): number[] | null {
+  if (!value) return null;
+  if (Array.isArray(value)) return value;
+
+  try {
+    const parsed = JSON.parse(value) as unknown;
+    return Array.isArray(parsed) ? (parsed as number[]) : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function POST() {
   try {
-    const supabase = createClient()!;
+    const supabase = createClient();
 
 
     const { data: likedMovies, error: fetchError } = await supabase
@@ -19,33 +41,25 @@ export async function POST() {
       return NextResponse.json({ error: "Like movies for recommendation." }, { status: 400 });
     }
 
-    const likedIds = likedMovies.map((m: any) => m.id);
+    const typedLikedMovies = likedMovies as LikedMovieRow[];
+    const likedIds = typedLikedMovies.map((movie) => movie.id);
 
 
     const avgVector = new Array(384).fill(0);
 
-    likedMovies.forEach((m: any) => {
-      let vectorArray = m.embedding;
-
-
-      if (typeof m.embedding === 'string') {
-        try {
-          vectorArray = JSON.parse(m.embedding);
-        } catch (e) {
-          console.error("Vektör dönüştürme hatası:", e);
-        }
-      }
+    typedLikedMovies.forEach((movie) => {
+      const vectorArray = parseEmbedding(movie.embedding);
 
 
       if (vectorArray && Array.isArray(vectorArray)) {
         vectorArray.forEach((v: number, i: number) => {
-          avgVector[i] += v / likedMovies.length;
+          avgVector[i] += v / typedLikedMovies.length;
         });
       }
     });
 
 
-    const { data: recommendations, error: matchError } = await (supabase as any).rpc('match_movies', {
+    const { data: recommendations, error: matchError } = await supabase.rpc('match_movies', {
       query_embedding: avgVector,
       match_threshold: 0.3,
       match_count: 30
@@ -54,14 +68,17 @@ export async function POST() {
     if (matchError) throw matchError;
 
 
-    const filteredRecommendations = recommendations
-      .filter((rec: any) => !likedIds.includes(rec.id))
+    const recommendationRows = (recommendations ?? []) as RecommendationRow[];
+
+    const filteredRecommendations = recommendationRows
+      .filter((rec) => !likedIds.includes(rec.id))
       .sort(() => Math.random() - 0.5)
       .slice(0, 10);
 
     return NextResponse.json({ recommendations: filteredRecommendations });
-  } catch (error: any) {
-    console.error("Recommend API Hatası:", error.message);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    console.error("Recommend API Hatası:", message);
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

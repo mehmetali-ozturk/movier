@@ -28,6 +28,54 @@ export interface FilterOptions {
 
 const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p";
 
+interface TmdbListMovie {
+  id: number;
+  title?: string;
+  original_title?: string;
+  overview?: string;
+  poster_path?: string;
+  backdrop_path?: string;
+  release_date?: string;
+  vote_average?: number;
+  vote_count?: number;
+  genre_ids?: number[];
+  original_language?: string;
+  runtime?: number;
+}
+
+interface TmdbGenre {
+  name: string;
+}
+
+interface TmdbMovieDetailsResponse {
+  id: number;
+  title?: string;
+  original_title?: string;
+  overview?: string;
+  poster_path?: string;
+  backdrop_path?: string;
+  release_date?: string;
+  vote_average?: number;
+  vote_count?: number;
+  genres?: TmdbGenre[];
+  original_language?: string;
+  runtime?: number;
+}
+
+interface TmdbListResponse {
+  results: TmdbListMovie[];
+}
+
+interface TmdbVideo {
+  site?: string;
+  type?: string;
+  key?: string;
+}
+
+interface TmdbVideosResponse {
+  results?: TmdbVideo[];
+}
+
 // Route all TMDB calls through our server-side proxy (/api/tmdb)
 // so the API key is never exposed in the browser bundle.
 function tmdb(path: string, params: Record<string, string> = {}): Promise<Response> {
@@ -98,7 +146,7 @@ export async function fetchMovies(
     });
     
     if (popularResponse.ok) {
-      const data = await popularResponse.json();
+      const data = (await popularResponse.json()) as TmdbListResponse;
       allMovies.push(...processMovies(data.results));
       console.log(`Popular movies (${language}): ${data.results.length}`);
     }
@@ -110,7 +158,7 @@ export async function fetchMovies(
     });
     
     if (topRatedResponse.ok) {
-      const data = await topRatedResponse.json();
+      const data = (await topRatedResponse.json()) as TmdbListResponse;
       allMovies.push(...processMovies(data.results));
       console.log(`Top rated movies (${language}): ${data.results.length}`);
     }
@@ -126,7 +174,7 @@ export async function fetchMovies(
       });
       
       if (genreResponse.ok) {
-        const data = await genreResponse.json();
+        const data = (await genreResponse.json()) as TmdbListResponse;
         allMovies.push(...processMovies(data.results));
         console.log(`Genre ${GENRE_MAP[genreId]} movies (${language}): ${data.results.length}`);
       }
@@ -186,7 +234,7 @@ async function fetchFilteredMovies(
 
     for (const response of responses) {
       if (response.ok) {
-        const data = await response.json();
+        const data = (await response.json()) as TmdbListResponse;
         allMovies.push(...processMovies(data.results));
       }
     }
@@ -202,15 +250,15 @@ async function fetchFilteredMovies(
   }
 }
 
-function processMovies(items: any[]): Movie[] {
+function processMovies(items: TmdbListMovie[]): Movie[] {
   return items
-    .filter((item: any) => {
+    .filter((item) => {
       // Poster ve açıklama olmalı
-      return item.poster_path && item.overview && item.vote_count > 10;
+      return item.poster_path && item.overview && (item.vote_count ?? 0) > 10;
     })
-    .map((item: any) => ({
+    .map((item) => ({
       id: item.id,
-      title: item.title || item.original_title, // Fallback to original
+      title: item.title || item.original_title || "Unknown Title", // Fallback to original
       originalTitle: item.original_title,
       overview: item.overview || `${item.title || item.original_title}`, // Fallback
       posterPath: item.poster_path,
@@ -229,38 +277,41 @@ export async function fetchMovieDetails(movieId: number, language: Language = "e
   if (movieDetailsCache.has(cacheKey)) return movieDetailsCache.get(cacheKey)!;
 
   try {
-
-    let response = await tmdb(`/movie/${movieId}`, { language });
+    const response = await tmdb(`/movie/${movieId}`, { language });
     
     if (!response.ok) return null;
     
-    let data = await response.json();
+    const data = (await response.json()) as TmdbMovieDetailsResponse;
+    let mergedData = data;
     
     // no explanation = use english language as default (fallback)
-    if (!data.overview && language !== "en") {
+    if (!mergedData.overview && language !== "en") {
       console.log(`No overview in ${language}, falling back to English`);
       const fallbackResponse = await tmdb(`/movie/${movieId}`, { language: "en" });
       
       if (fallbackResponse.ok) {
-        const fallbackData = await fallbackResponse.json();
-        data.overview = fallbackData.overview || data.overview;
-        data.title = data.title || fallbackData.title;
+        const fallbackData = (await fallbackResponse.json()) as TmdbMovieDetailsResponse;
+        mergedData = {
+          ...mergedData,
+          overview: fallbackData.overview || mergedData.overview,
+          title: mergedData.title || fallbackData.title,
+        };
       }
     }
     
     const movie: Movie = {
-      id: data.id,
-      title: data.title || data.original_title,
-      originalTitle: data.original_title,
-      overview: data.overview || `${data.title || data.original_title}`,
-      posterPath: data.poster_path,
-      backdropPath: data.backdrop_path,
-      releaseDate: data.release_date,
-      voteAverage: data.vote_average,
-      voteCount: data.vote_count,
-      genres: data.genres?.map((g: any) => g.name),
-      language: data.original_language,
-      runtime: data.runtime,
+      id: mergedData.id,
+      title: mergedData.title || mergedData.original_title || "Unknown Title",
+      originalTitle: mergedData.original_title,
+      overview: mergedData.overview || `${mergedData.title || mergedData.original_title}`,
+      posterPath: mergedData.poster_path,
+      backdropPath: mergedData.backdrop_path,
+      releaseDate: mergedData.release_date,
+      voteAverage: mergedData.vote_average,
+      voteCount: mergedData.vote_count,
+      genres: mergedData.genres?.map((genre) => genre.name),
+      language: mergedData.original_language,
+      runtime: mergedData.runtime,
     };
     movieDetailsCache.set(cacheKey, movie);
     return movie;
@@ -275,15 +326,16 @@ export async function fetchMovieTrailer(movieId: number): Promise<string | null>
     const response = await tmdb(`/movie/${movieId}/videos`, { language: "en-US" });
     if (!response.ok) return null;
 
-    const data = await response.json();
+    const data = (await response.json()) as TmdbVideosResponse;
+    const videos = data.results ?? [];
 
-    const trailer = data.results.find(
-      (v: any) => v.site === "YouTube" && v.type === "Trailer"
-    ) || data.results.find(
-      (v: any) => v.site === "YouTube"
+    const trailer = videos.find(
+      (video) => video.site === "YouTube" && video.type === "Trailer"
+    ) || videos.find(
+      (video) => video.site === "YouTube"
     );
 
-    return trailer ? trailer.key : null;
+    return trailer?.key ?? null;
   } catch (error) {
     console.error("Error fetching trailer:", error);
     return null;
@@ -297,8 +349,10 @@ export async function fetchVectorRecommendations(
 ): Promise<Movie[]> {
   const supabase = createClient(); // Supabase client runs
 
+  type MatchMovieRow = { id: number };
+
   // Fetching Supabase ıd's
-  const { data: matchedMovies, error } = await (supabase as any).rpc('match_movies', {
+  const { data: matchedMovies, error } = await supabase.rpc('match_movies', {
     query_embedding: userVector,
     match_threshold: 0.3, // max %70 similarity
     match_count: 10
@@ -310,10 +364,9 @@ export async function fetchVectorRecommendations(
   }
 
  //  fetch details of matched ID in users preffered language
+  const typedMatches = (matchedMovies ?? []) as MatchMovieRow[];
   const recommendedMovies = await Promise.all(
-    matchedMovies.map(async (m: any) => {
-      return await fetchMovieDetails(m.id, language);
-    })
+    typedMatches.map((movie) => fetchMovieDetails(movie.id, language))
   );
 
   return recommendedMovies.filter(Boolean) as Movie[];
