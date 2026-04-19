@@ -81,15 +81,15 @@ The system is divided into three main logical layers: Presentation, Business Log
 ```mermaid
 flowchart TD
     subgraph Presentation Layer
-        UI[React Components / Pages]
-        AuthCtx[Auth Context / State]
+        UI[React Components and Pages]
+        AuthCtx[Auth Context and State]
     end
 
     subgraph Business Logic & AI Proxy
-        TMDB_API[Next.js API Route /api/tmdb]
-        Embed_API[Next.js API Route /api/embed]
-        Rec_API[Next.js API Route /api/recommend]
-        StoreClient[Storage Services / lib]
+        TMDB_API[Next.js API Route TMDB]
+        Embed_API[Next.js API Route Embed]
+        Rec_API[Next.js API Route Recommend]
+        StoreClient[Storage Services Lib]
     end
 
     subgraph External Systems & Data Layer
@@ -102,13 +102,13 @@ flowchart TD
     UI -->|Reads Auth State| AuthCtx
     UI -->|Requests Regular Movies| TMDB_API
     UI -->|Requests AI Recommendations| Rec_API
-    UI -->|Saves Liked Movies / Triggers Embed| StoreClient
+    UI -->|Saves Liked Movies and Triggers Embed| StoreClient
     
     AuthCtx -->|Auth Operations| Supabase
     TMDB_API -->|Secure Request Hidden API Key| TMDB
     
     StoreClient -->|If Authenticated| Supabase
-    StoreClient -->|Calls /api/embed (Async)| Embed_API
+    StoreClient -->|Calls Embed API Async| Embed_API
     StoreClient -->|If Anonymous User| LocalDB
 
     Embed_API -->|Requests Vector Embedding| HF
