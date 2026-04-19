@@ -43,7 +43,9 @@ export default function Home() {
   const seenMovieIdsRef = useRef<Set<number>>(new Set());
 
   useEffect(() => {
+    let active = true;
     setHasMounted(true);
+
     const resetLikesOnEntry = async () => {
         const supabase = createClient();
         const { error } = await supabase
@@ -54,12 +56,40 @@ export default function Home() {
         if (error) console.error("Sıfırlama hatası:", error.message);
       };
 
-        resetLikesOnEntry();
+    const initialize = async () => {
+      const savedLanguage = getLanguagePreference();
+      setLanguage(savedLanguage);
 
-    const savedLanguage = getLanguagePreference();
-    setLanguage(savedLanguage);
-    loadMovies(savedLanguage);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+      setLoading(true);
+      setIsAiMode(false);
+      setNoResults(false);
+
+      await resetLikesOnEntry();
+
+      try {
+        const genres = getLikedGenres();
+        const initialMovies = await fetchMovies(genres, savedLanguage, {}, []);
+        if (!active) return;
+
+        if (initialMovies.length === 0) {
+          setApiKeyMissing(true);
+        }
+
+        setMovies(initialMovies);
+        setCurrentIndex(0);
+      } catch (error) {
+        console.error("Initial movie load error:", error);
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+
+    void initialize();
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (authLoading) return;
