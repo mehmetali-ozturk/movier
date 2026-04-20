@@ -349,7 +349,7 @@ export default function WatchlistPanel({
                           )}
 
                           {/* Actions */}
-                          <div className="flex gap-2">
+                          <div className="flex flex-wrap gap-2">
                             {canToggleWatched && (
                               <button
                                 onClick={() => { void onToggleWatched(movie.id, !movie.watched); }}

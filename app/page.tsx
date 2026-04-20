@@ -1,5 +1,4 @@
 "use client";
-// app/page.tsx dosyasının en üstüne ekle:
 import { useState, useEffect, useRef } from "react";
 import MovieCard from "@/components/MovieCard";
 import MovieDetailsModal from "@/components/MovieDetailsModal";
@@ -295,11 +294,11 @@ export default function Home() {
 
   if (apiKeyMissing) {
     return (
-      <main className="min-h-screen flex items-center justify-center p-4">
-        <div className="max-w-2xl bg-white/10 backdrop-blur-lg rounded-3xl p-8 border border-white/20">
+      <main className="h-[100dvh] overflow-hidden flex items-center justify-center p-3 sm:p-4">
+        <div className="w-full max-w-2xl max-h-full overflow-y-auto bg-white/10 backdrop-blur-lg rounded-3xl p-5 sm:p-8 border border-white/20">
           <div className="flex items-center gap-3 mb-4">
-            <Image src="/logo.png" alt="Movier" width={40} height={40} />
-            <h1 className="text-4xl font-bold text-white">Movier</h1>
+            <Image src="/logo.png" alt="Movier" width={40} height={40} className="w-9 h-9 sm:w-10 sm:h-10" />
+            <h1 className="text-3xl sm:text-4xl font-bold text-white">Movier</h1>
           </div>
           <h2 className="text-2xl font-semibold text-red-300 mb-4">TMDB API Key Gerekli</h2>
           <p className="text-gray-300 mb-4">
@@ -330,15 +329,15 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-6">
-          <div className="flex items-center justify-center gap-3 mb-3">
-            <h1 className="text-5xl font-bold text-white tracking-tight flex items-center gap-3">
-              <Image src="/logo.png" alt="Movier" width={48} height={48} />
+    <main className="h-[100dvh] overflow-hidden flex flex-col items-center px-3 py-3 sm:p-4">
+      <div className="w-full max-w-md md:max-w-lg lg:max-w-xl h-full min-h-0 flex flex-col">
+        <div className="text-center mb-3 sm:mb-5 shrink-0">
+          <div className="flex flex-col items-center gap-3 mb-3">
+            <h1 className="text-3xl sm:text-5xl font-bold text-white tracking-tight flex items-center gap-2 sm:gap-3">
+              <Image src="/logo.png" alt="Movier" width={48} height={48} className="w-9 h-9 sm:w-12 sm:h-12" />
               <span className="text-red-600">Movier</span>
             </h1>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap items-center justify-center gap-2 max-w-full">
               <button
                 onClick={loadAiRecommendations}
                 className={`p-2 rounded-lg border transition ${isAiMode ? "bg-purple-600 border-purple-500 text-white" : "bg-purple-600/20 hover:bg-purple-600/30 border-purple-600/50"}`}
@@ -383,7 +382,7 @@ export default function Home() {
                   <Languages className="text-red-500" size={20} />
                 </button>
                 {showLanguageMenu && (
-                  <div className="absolute top-12 right-0 bg-black/95 backdrop-blur-lg border border-red-600/30 rounded-xl overflow-hidden shadow-2xl z-50 min-w-[180px]">
+                  <div className="absolute top-12 right-0 w-44 max-w-[calc(100vw-1rem)] bg-black/95 backdrop-blur-lg border border-red-600/30 rounded-xl overflow-hidden shadow-2xl z-50">
                     {(Object.keys(languageLabels) as Language[]).map((lang) => (
                       <button
                         key={lang}
@@ -434,7 +433,7 @@ export default function Home() {
           <p className="text-gray-400 text-sm mb-2">
             {language === "en" ? "Swipe to discover movies" : "Filmleri kaydırarak keşfet"}
           </p>
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-red-600/10 border border-red-600/30 rounded-full">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 bg-red-600/10 border border-red-600/30 rounded-full">
             <Heart className="text-red-500" size={16} fill="currentColor" />
             <span className="text-white font-medium">{hasMounted ? watchlist.length : 0}</span>
             <span className="text-gray-400 text-sm">• {languageLabels[language]}</span>
@@ -449,7 +448,7 @@ export default function Home() {
           onClose={() => setShowFilterBar(false)}
         />
 
-        <div className="relative h-[600px] flex items-center justify-center mb-6">
+        <div className="relative flex-1 min-h-0 flex items-center justify-center mb-3 sm:mb-5 overflow-visible">
           {loading ? (
             <div className="flex flex-col items-center gap-3">
               <div className="w-12 h-12 border-4 border-red-600/30 border-t-red-600 rounded-full animate-spin" />
@@ -486,27 +485,27 @@ export default function Home() {
           )}
         </div>
 
-        <div className="flex justify-center gap-4 mb-4">
+        <div className="shrink-0 flex justify-center gap-3 sm:gap-4 mb-2 sm:mb-4">
           <button
             onClick={() => handleSwipe("left")}
             disabled={!currentMovie || loading}
-            className="w-16 h-16 rounded-full bg-gray-800 border-2 border-gray-700 flex items-center justify-center hover:bg-gray-700 hover:border-gray-600 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+            className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gray-800 border-2 border-gray-700 flex items-center justify-center hover:bg-gray-700 hover:border-gray-600 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
           >
-            <X className="text-gray-300" size={28} />
+            <X className="text-gray-300" size={24} />
           </button>
           <button
             onClick={() => handleSwipe("up")}
             disabled={!currentMovie || loading}
-            className="w-16 h-16 rounded-full bg-blue-600 border-2 border-blue-500 flex items-center justify-center hover:bg-blue-700 hover:border-blue-600 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+            className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-blue-600 border-2 border-blue-500 flex items-center justify-center hover:bg-blue-700 hover:border-blue-600 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
           >
-            <Info className="text-white" size={28} />
+            <Info className="text-white" size={24} />
           </button>
           <button
             onClick={() => handleSwipe("right")}
             disabled={!currentMovie || loading}
-            className="w-16 h-16 rounded-full bg-red-600 border-2 border-red-500 flex items-center justify-center hover:bg-red-700 hover:border-red-600 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+            className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-red-600 border-2 border-red-500 flex items-center justify-center hover:bg-red-700 hover:border-red-600 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
           >
-            <Heart className="text-white" size={28} />
+            <Heart className="text-white" size={24} />
           </button>
         </div>
       </div>

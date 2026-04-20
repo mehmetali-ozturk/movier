@@ -45,7 +45,7 @@ export default function MovieCard({ movie, nextMovie, onSwipe, language }: Movie
   };
 
   return (
-    <div className="relative w-full max-w-sm" style={{ height: "600px" }}>
+    <div className="relative h-full max-h-[780px] w-auto max-w-full aspect-[2/3]">
       {nextMovie && (
         <motion.div
           className="absolute inset-0 rounded-2xl overflow-hidden shadow-xl"
@@ -110,23 +110,23 @@ export default function MovieCard({ movie, nextMovie, onSwipe, language }: Movie
 
           <motion.div
             style={{ opacity: likeOpacity, scale: likeOpacity }}
-            className="absolute top-10 right-8 z-20 w-16 h-16 rounded-full bg-black/30 backdrop-blur-md border-[3px] border-green-400 flex items-center justify-center shadow-xl shadow-green-500/40"
+            className="absolute top-6 right-5 sm:top-10 sm:right-8 z-20 w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-black/30 backdrop-blur-md border-[3px] border-green-400 flex items-center justify-center shadow-xl shadow-green-500/40"
           >
-            <Heart className="text-green-400" size={30} fill="currentColor" />
+            <Heart className="text-green-400" size={24} fill="currentColor" />
           </motion.div>
 
           <motion.div
             style={{ opacity: nopeOpacity, scale: nopeOpacity }}
-            className="absolute top-10 left-8 z-20 w-16 h-16 rounded-full bg-black/30 backdrop-blur-md border-[3px] border-red-400 flex items-center justify-center shadow-xl shadow-red-500/40"
+            className="absolute top-6 left-5 sm:top-10 sm:left-8 z-20 w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-black/30 backdrop-blur-md border-[3px] border-red-400 flex items-center justify-center shadow-xl shadow-red-500/40"
           >
-            <X className="text-red-400" size={30} strokeWidth={3} />
+            <X className="text-red-400" size={24} strokeWidth={3} />
           </motion.div>
 
           <motion.div
             style={{ opacity: upOpacity, scale: upOpacity }}
-            className="absolute top-10 left-1/2 -translate-x-1/2 z-20 w-16 h-16 rounded-full bg-black/30 backdrop-blur-md border-[3px] border-blue-400 flex items-center justify-center shadow-xl shadow-blue-500/40"
+            className="absolute top-6 sm:top-10 left-1/2 -translate-x-1/2 z-20 w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-black/30 backdrop-blur-md border-[3px] border-blue-400 flex items-center justify-center shadow-xl shadow-blue-500/40"
           >
-            <ChevronUp className="text-blue-400" size={30} strokeWidth={3} />
+            <ChevronUp className="text-blue-400" size={24} strokeWidth={3} />
           </motion.div>
 
           <div className="relative h-full bg-gray-900">
@@ -172,9 +172,9 @@ export default function MovieCard({ movie, nextMovie, onSwipe, language }: Movie
               initial={{ y: 30, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.15, type: "spring" }}
-              className="absolute bottom-0 left-0 right-0 p-6"
+              className="absolute bottom-0 left-0 right-0 p-4 sm:p-6"
             >
-              <h2 className="text-3xl font-black text-white mb-2 drop-shadow-lg line-clamp-2 leading-tight">
+              <h2 className="text-2xl sm:text-3xl font-black text-white mb-2 drop-shadow-lg line-clamp-2 leading-tight">
                 {movie.title}
               </h2>
               <div className="flex items-center gap-4 mb-3">
