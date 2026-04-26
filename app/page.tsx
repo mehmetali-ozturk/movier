@@ -1,4 +1,5 @@
 "use client";
+import { createClient } from "@/lib/supabase";
 import { useState, useEffect, useRef } from "react";
 import MovieCard from "@/components/MovieCard";
 import MovieDetailsModal from "@/components/MovieDetailsModal";
@@ -43,6 +44,18 @@ export default function Home() {
   useEffect(() => {
     let active = true;
     setHasMounted(true);
+
+        const resetLikesOnEntry = async () => {
+              const supabase = createClient() as any;
+              const { error } = await supabase
+                .from("movies")
+                .update({ is_liked: false })
+                .eq("is_liked", true);
+
+              if (error) console.error("Sıfırlama hatası:", error.message);
+            };
+            resetLikesOnEntry();
+
 
     const initialize = async () => {
       const savedLanguage = getLanguagePreference();
