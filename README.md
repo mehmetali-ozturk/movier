@@ -4,7 +4,7 @@ Swipe-based movie discovery app built with Next.js and TMDB. The project support
  It solves the problem of "decision fatigue" by allowing users to quickly discover films through an intuitive swipe interface. 
 ## Architecture Link
 🔗 **[Click here to view the Software Architecture Documentation ](./ARCHITECTURE.md)**
-
+**[https://www.youtube.com/watch?v=BKq7u4WLU-Q](Video Demonstration)**
 ## Features
 
 - Swipe UI for like / skip interactions
