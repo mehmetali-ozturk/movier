@@ -15,6 +15,7 @@
 |---------|------------|-----------|-------------|
 | 1.0     | 07.04.2026 | Team      | Initial draft of 4+1 Architectural View Model |
 | 2.0     | 19.04.2026 | Team      | Updated to reflect AI-powered recommendation engine and vector database integration |
+| 3.0     | 27.04.2026 | Team      | Added Use Case Diagram and UML Diagram |
 
 ---
 
