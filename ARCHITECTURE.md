@@ -39,6 +39,8 @@
 * Figure 2: Process View - Sequence Diagram
 * Figure 3: Development View - Component Diagram
 * Figure 4: Physical View - Deployment Diagram
+* Figure 5: UML Activity Diagram - Semantic Recommendation Flow
+* Figure 6: Use Case Diagram - AI Recommendation Flow
 
 ---
 
@@ -226,6 +228,59 @@ flowchart TD
 ---
 
 ## 9. Scenarios
+
+### UML Activity Diagram - Scenario 1: Generating Semantic Recommendations
+*Figure 5: UML Activity Diagram - Semantic Recommendation Flow*
+
+```mermaid
+flowchart TD
+    Start([User clicks AI Analyze]) --> A[Frontend calls POST /api/recommend\ncache: no-store]
+    A --> B[Server queries Supabase\nSELECT movies WHERE is_liked = true]
+    B --> C{Liked movies found?}
+    C -->|No| D([Prompt user to like movies first])
+    C -->|Yes| E[Calculate average preference vector\navg of all liked embeddings]
+    E --> F[Execute RPC match_movies on Supabase\npgvector cosine similarity search]
+    F --> G[Filter out already-liked movies from results]
+    G --> H[Fetch full metadata from TMDB\nfor each matched movie ID]
+    H --> I[Return enriched movie list to client]
+    I --> End([Render new swipeable recommendation deck])
+```
+
+---
+
+### Use Case Diagram - Scenario 1: Generating Semantic Recommendations
+*Figure 6: Use Case Diagram - AI Recommendation Flow*
+
+```mermaid
+flowchart LR
+    User((User))
+
+    UC1[Click AI Analyze]
+    UC2[Toggle AI Mode]
+    UC3[Fetch Recommendations]
+    UC4[Compute Average Vector]
+    UC5[Run Vector Search]
+    UC6[Filter Liked Movies]
+    UC7[Enrich Movie Data]
+    UC8[Render Swipeable Deck]
+
+    Supabase[Supabase + pgvector]
+    TMDB[TMDB API]
+
+    User --> UC1
+    User --> UC2
+    User --> UC3
+    User --> UC8
+
+    UC3 --> Supabase
+    UC4 --> Supabase
+    UC5 --> Supabase
+    UC6 --> Supabase
+    UC7 --> TMDB
+```
+
+---
+
 **Scenario 1: Generating Semantic Recommendations**
 * User clicks the "AI Analyze" button.
 * The frontend forces Vercel to bypass the cache and calls `/api/recommend`.
